@@ -1,0 +1,112 @@
+[
+    {
+        "task_id": "task-1",
+        "frequency": 20,
+        "devices": [
+            {
+                "device_id": "r1",
+                "device_metrics": {
+                    "cpu_usage": true,
+                    "ram_usage": true,
+                    "interface_stats": ["eth0", "eth1"]
+                },
+                "link_metrics": {
+                    "bandwidth": {
+                        "tool": "iperf",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "udp",
+                        "frequency": 60
+                    },
+                    "jitter": {
+                        "tool": "iperf",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "udp",
+                        "frequency": 60
+                    },
+                    "packet_loss": {
+                        "tool": "iperf",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "udp",
+                        "frequency": 60
+                    },
+                    "latency": {
+                        "tool": "ping",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "icmp",
+                        "frequency": 60
+                    },
+                    "alertflow_conditions": {
+                        "cpu_usage": 80,
+                        "ram_usage": 90,
+                        "interface_stats": 2000,
+                        "packet_loss": 5,
+                        "jitter": 100
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "task_id": "task-2",
+        "frequency": 50,
+        "devices": [
+            {
+                "device_id": "r2",
+                "device_metrics": {
+                    "cpu_usage": true,
+                    "ram_usage": true,
+                    "interface_stats": ["eth1", "eth2"]
+                },
+                "link_metrics": {
+                    "bandwidth": {
+                        "tool": "iperf",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "tcp",
+                        "frequency": 60
+                    },
+                    "jitter": {
+                        "tool": "ping",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "tcp",
+                        "frequency": 60
+                    },
+                    "packet_loss": {
+                        "tool": "iperf",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "udp",
+                        "frequency": 60
+                    },
+                    "latency": {
+                        "tool": "ping",
+                        "is_client": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 10,
+                        "transport_type": "icmp",
+                        "frequency": 60
+                    },
+                    "alertflow_conditions": {
+                        "cpu_usage": 80,
+                        "ram_usage": 90,
+                        "interface_stats": 2000,
+                        "packet_loss": 5,
+                        "jitter": 100
+                    }
+                }
+            }
+        ]
+    }
+]
