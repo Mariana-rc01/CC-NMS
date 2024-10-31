@@ -5,13 +5,19 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 )
 
 func main() {
-	registerAgent()
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s <server IP>\n", os.Args[0])
+		return
+	}
+
+	registerAgent(os.Args[1])
 }
 
-func registerAgent() {
+func registerAgent(serverIP string) {
 	conn, err := net.ListenUDP("udp", nil)
 	if err != nil {
 		log.Fatalf("Failed to connect to server: %v", err)
@@ -31,7 +37,7 @@ func registerAgent() {
 		fmt.Println("Server connection closed")
 	})
 
-	serverAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:8080")
+	serverAddr, err := net.ResolveUDPAddr("udp", serverIP+":8080")
 	if err != nil {
 		log.Fatalf("Failed to resolve server address: %v", err)
 	}
