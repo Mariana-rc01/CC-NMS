@@ -2,17 +2,26 @@ package main
 
 import (
 	"cc-nms/lib"
-
+	"cc-nms/lib/transport"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"net"
 	"os"
 )
+
+type Agent struct {
+	Id      int
+	Address net.UDPAddr
+}
+
+var agents []Agent
 
 // loadTasks reads the configuration file, parses it, and returns the tasks.
 func loadTasks(filename string) ([]lib.Task, error) {
 	file, err := os.Open(filename) // opens json file
-	if err != nil {                //checks if there was a error opening the file
+	if err != nil {                //checks if there was an error opening the file
 		return nil, err
 	}
 	defer file.Close()
@@ -44,7 +53,7 @@ func main() {
 	}
 
 	fmt.Println("Tasks loaded successfully:")
-	for _, task := range tasks { // _, because we don't need de index of the task
+	for _, task := range tasks { // _, because we don't need the index of the task
 		fmt.Printf("Task ID: %s, Frequency: %d\n", task.Task_ID, task.Frequency)
 		for _, device := range task.Devices {
 			fmt.Printf("  Device ID: %s\n", device.Device_ID)
@@ -54,4 +63,49 @@ func main() {
 			fmt.Println("  Link Metrics:", device.Link_Metrics)
 		}
 	}
+
+	go receiver()
+
+	select {}
+}
+
+func receiver() {
+	// Resolve UDP address and listen on it
+	addr, err := net.ResolveUDPAddr("udp", ":8080")
+	if err != nil {
+		log.Fatalf("Failed to resolve address: %v", err)
+	}
+
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		log.Fatalf("Failed to listen on address: %v", err)
+	}
+	defer conn.Close()
+
+	packetHandler := func(packet transport.Packet, addr *net.UDPAddr, server *transport.UDPConnection) {
+		switch p := packet.(type) {
+		case *transport.AgentRegisterPacket:
+			_ = p // remover
+			fmt.Printf("Received UDP packet to register a new agent from %s\n", addr)
+			go handleRegisterAgent(server, addr)
+		default:
+			fmt.Printf("Unknown packet type from %s\n", addr)
+		}
+	}
+
+	// Create and start the UDP connection
+	server := transport.InitializeUDPConnection(conn, packetHandler, func() {
+		fmt.Println("Server connection closed")
+	})
+	server.Start()
+
+	// Keep server running indefinitely
+	select {}
+}
+
+func handleRegisterAgent(server *transport.UDPConnection, address *net.UDPAddr) {
+	fmt.Printf("New agent (%s) registered with ID %d\n", address, len(agents)+1)
+	agents = append(agents, Agent{Id: len(agents) + 1, Address: *address})
+
+	server.SendPacket(&transport.AgentStartPacket{ID: len(agents)}, address)
 }
