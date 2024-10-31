@@ -56,7 +56,6 @@ func (p *AgentStartPacket) Serialize() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// SerializePacket writes serialized packet data to the provided io.Writer
 func SerializePacket(writer io.Writer, packet Packet) error {
 	data, err := packet.Serialize()
 	if err != nil {

@@ -104,9 +104,8 @@ func receiver() {
 }
 
 func handleRegisterAgent(server *transport.UDPConnection, address *net.UDPAddr) {
-	fmt.Printf("New agent registered: %s\n", address)
+	fmt.Printf("New agent (%s) registered with ID %d\n", address, len(agents)+1)
 	agents = append(agents, Agent{Id: len(agents) + 1, Address: *address})
-	fmt.Printf("Total agents: %d\n", len(agents))
 
 	server.SendPacket(&transport.AgentStartPacket{ID: len(agents)}, address)
 }

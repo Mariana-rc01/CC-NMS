@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bytes"
+	"log"
 	"net"
 	"sync"
 )
@@ -68,11 +69,12 @@ func (srv *UDPConnection) SendPacket(packet Packet, addr *net.UDPAddr) {
 	buffer := new(bytes.Buffer)
 	err := SerializePacket(buffer, packet)
 	if err != nil {
-
+		log.Fatalf("Failed to serialize packet: %v", err)
 		return
 	}
 
 	_, err = srv.connection.WriteToUDP(buffer.Bytes(), addr)
 	if err != nil {
+		log.Fatalf("Failed to send packet: %v", err)
 	}
 }
