@@ -66,6 +66,8 @@ func main() {
 
 	go receiver()
 
+	go startTCPAlertReceiver()
+
 	select {}
 }
 
@@ -108,4 +110,38 @@ func handleRegisterAgent(server *transport.UDPConnection, address *net.UDPAddr) 
 	agents = append(agents, Agent{Id: len(agents) + 1, Address: *address})
 
 	server.SendPacket(&transport.AgentStartPacket{ID: len(agents)}, address)
+}
+
+func startTCPAlertReceiver() {
+	listener, err := net.Listen("tcp", ":8081")
+	if err != nil {
+		log.Fatalf("Failed to start TCP server: %v", err)
+	}
+	defer listener.Close()
+
+	fmt.Println("TCP server listening on port 8081")
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Failed to accept connection: %v", err)
+			continue
+		}
+
+		go handleTCPConnection(conn)
+	}
+}
+
+func handleTCPConnection(conn net.Conn) {
+	defer conn.Close()
+	buffer := make([]byte, 4096)
+
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			log.Printf("Connection closed by %s: %v", conn.RemoteAddr(), err)
+			return
+		}
+		fmt.Printf("Received alert from %s: %s\n", conn.RemoteAddr(), string(buffer[:n]))
+	}
 }
