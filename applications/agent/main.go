@@ -32,6 +32,11 @@ func registerAgent(serverIP string) {
 		switch p := packet.(type) {
 		case *transport.AgentStartPacket:
 			fmt.Printf("Assigned ID is %d.\n", p.ID)
+		case *transport.TaskPacket:
+			fmt.Printf("Received task: %s\n", string(p.Data))
+
+			confirmationPacket := &transport.ConfirmationPacket{Message: "Task received"}
+			conn.SendPacket(confirmationPacket, addr)
 		default:
 			fmt.Printf("Unknown packet type from %s\n", addr)
 		}
@@ -64,6 +69,7 @@ func startTCPAlertFlow(serverIP string) {
 		fmt.Println("TCP connection closed")
 	})
 
+	// isto aqui é apenas para ver que o TCP funciona
 	alertMessage := []byte("Critical alert: Metric threshold exceeded")
 	err = tcpConn.SendData(alertMessage)
 	if err != nil {

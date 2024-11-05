@@ -11,6 +11,8 @@ import (
 const (
 	AgentRegister = 0
 	AgentStart    = 1
+	Task          = 2
+	Confirmation  = 3
 )
 
 type Packet interface {
@@ -56,6 +58,40 @@ func (p *AgentStartPacket) Serialize() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type TaskPacket struct {
+	Data []byte
+}
+
+func (p *TaskPacket) getType() int {
+	return Task
+}
+
+func (p *TaskPacket) Serialize() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := binary.Write(&buf, binary.LittleEndian, int32(Task)); err != nil {
+		return nil, err
+	}
+	buf.Write(p.Data)
+	return buf.Bytes(), nil
+}
+
+type ConfirmationPacket struct {
+	Message string
+}
+
+func (p *ConfirmationPacket) getType() int {
+	return Confirmation
+}
+
+func (p *ConfirmationPacket) Serialize() ([]byte, error) {
+	var buf bytes.Buffer
+	if err := binary.Write(&buf, binary.LittleEndian, int32(Confirmation)); err != nil {
+		return nil, err
+	}
+	buf.WriteString(p.Message)
+	return buf.Bytes(), nil
+}
+
 func SerializePacket(writer io.Writer, packet Packet) error {
 	data, err := packet.Serialize()
 	if err != nil {
@@ -81,6 +117,10 @@ func DeserializePacket(data []byte) (Packet, error) {
 		}
 		id := int(binary.LittleEndian.Uint32(data[4:8]))
 		return &AgentStartPacket{ID: id}, nil
+	case Task:
+		return &TaskPacket{Data: data[4:]}, nil
+	case Confirmation:
+		return &ConfirmationPacket{Message: string(data[4:])}, nil
 	default:
 		return nil, errors.New("unknown packet type")
 	}
