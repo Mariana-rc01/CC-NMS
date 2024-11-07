@@ -57,19 +57,17 @@ func main() {
 		fmt.Printf("Task ID: %s, Frequency: %d\n", task.Task_ID, task.Frequency)
 		for _, device := range task.Devices {
 			fmt.Printf("  Device ID: %s\n", device.Device_ID)
-			fmt.Printf("  CPU Usage Monitoring: %t\n", device.Device_Metrics.CPU_Usage)
-			fmt.Printf("  RAM Usage Monitoring: %t\n", device.Device_Metrics.RAM_Usage)
-			fmt.Println("  Interface Stats:", device.Device_Metrics.Interface_Stats)
-			fmt.Println("  Link Metrics:", device.Link_Metrics)
 		}
 	}
 
-	go receiver()
+	go receiver(tasks)
+
+	go startTCPAlertReceiver()
 
 	select {}
 }
 
-func receiver() {
+func receiver(tasks []lib.Task) {
 	// Resolve UDP address and listen on it
 	addr, err := net.ResolveUDPAddr("udp", ":8080")
 	if err != nil {
@@ -87,7 +85,10 @@ func receiver() {
 		case *transport.AgentRegisterPacket:
 			_ = p // remover
 			fmt.Printf("Received UDP packet to register a new agent from %s\n", addr)
-			go handleRegisterAgent(server, addr)
+			agentID := handleRegisterAgent(server, addr, tasks)
+			distributeTasksToAgents(server, tasks, agentID)
+		case *transport.ConfirmationPacket:
+			fmt.Printf("Confirmation received from %s\n", addr)
 		default:
 			fmt.Printf("Unknown packet type from %s\n", addr)
 		}
@@ -103,9 +104,61 @@ func receiver() {
 	select {}
 }
 
-func handleRegisterAgent(server *transport.UDPConnection, address *net.UDPAddr) {
+func handleRegisterAgent(server *transport.UDPConnection, address *net.UDPAddr, tasks []lib.Task) int {
+	agentID := len(agents) + 1
 	fmt.Printf("New agent (%s) registered with ID %d\n", address, len(agents)+1)
-	agents = append(agents, Agent{Id: len(agents) + 1, Address: *address})
+	agents = append(agents, Agent{Id: agentID, Address: *address})
 
-	server.SendPacket(&transport.AgentStartPacket{ID: len(agents)}, address)
+	server.SendPacket(&transport.AgentStartPacket{ID: agentID}, address)
+	return agentID
+}
+
+func distributeTasksToAgents(server *transport.UDPConnection, tasks []lib.Task, agentID int) {
+	for _, task := range tasks {
+		for _, device := range task.Devices {
+			if fmt.Sprintf("%d", agentID) == device.Device_ID {
+				taskData, err := json.Marshal(task)
+				if err != nil {
+					log.Printf("Failed to serialize task: %v", err)
+					continue
+				}
+				server.SendPacket(&transport.TaskPacket{Data: taskData}, &agents[agentID-1].Address)
+				fmt.Printf("Task ID %s sent to agent %d at %s\n", task.Task_ID, agentID, agents[agentID-1].Address.String())
+			}
+		}
+	}
+}
+
+func startTCPAlertReceiver() {
+	listener, err := net.Listen("tcp", ":8081")
+	if err != nil {
+		log.Fatalf("Failed to start TCP server: %v", err)
+	}
+	defer listener.Close()
+
+	fmt.Println("TCP server listening on port 8081")
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Failed to accept connection: %v", err)
+			continue
+		}
+
+		go handleTCPConnection(conn)
+	}
+}
+
+func handleTCPConnection(conn net.Conn) {
+	defer conn.Close()
+	buffer := make([]byte, 4096)
+
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			log.Printf("Connection closed by %s: %v", conn.RemoteAddr(), err)
+			return
+		}
+		fmt.Printf("Received alert from %s: %s\n", conn.RemoteAddr(), string(buffer[:n]))
+	}
 }
