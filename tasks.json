@@ -59,7 +59,7 @@
         "frequency": 50,
         "devices": [
             {
-                "device_id": "2",
+                "device_id": "n3",
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
