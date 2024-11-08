@@ -1,4 +1,5 @@
 import socket
+import threading
 
 from lib.packets import Packet
 
@@ -20,19 +21,32 @@ class UDPServer:
             try:
                 message, client_address = self.socket.recvfrom(1024)
 
-                received_packet = Packet.deserialize(message)
-                
-                response = self.handler(received_packet, client_address)
-                
-                # If a response is provided by the handler, send it back to the client (serialize it first)
-                if response:
-                    serialized_response = response.serialize()
-                    self.socket.sendto(serialized_response, client_address)
+                # Start a new thread for handling the received packet
+                threading.Thread(
+                    target=self.handle_packet,
+                    args=(message, client_address),
+                    daemon=True
+                ).start()
             except KeyboardInterrupt:
                 print("Server interrupted manually. Stopping.")
                 self.stop()
             except Exception as e:
                 print(f"Error: {e}")
+
+    def handle_packet(self, message, client_address):
+        try:
+            # Deserialize the received packet
+            received_packet = Packet.deserialize(message)
+            
+            # Call the handler to process the packet
+            response = self.handler(received_packet, client_address)
+            
+            # If a response is provided, serialize and send it back to the client
+            if response:
+                serialized_response = response.serialize()
+                self.socket.sendto(serialized_response, client_address)
+        except Exception as e:
+            print(f"Error handling packet from {client_address}: {e}")
 
     def stop(self):
         self.is_running = False
