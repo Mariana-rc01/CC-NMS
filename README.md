@@ -4,24 +4,14 @@ This project was developed for the Computer Communications and Networks class an
 
 ## 🛠️ Usage
 
-To build the project:
-```
-$ make
-```
-
 To run the server:
 ```
-$ bin/server
+$ python3 src/server.py
 ```
 
 To run an agent:
 ```
-$ bin/agent
-```
-
-To format the source files:
-```
-$ make format
+$ bin/agent src/agent.py <server_ip> <agent_id>
 ```
 
 ## 🫂 Group
