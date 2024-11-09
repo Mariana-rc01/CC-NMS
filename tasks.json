@@ -13,35 +13,33 @@
                 "link_metrics": {
                     "bandwidth": {
                         "tool": "iperf",
-                        "is_client": true,
+                        "is_server": true,
                         "server_address": "192.168.1.1",
                         "duration": 10,
-                        "transport_type": "udp",
+                        "transport": "udp",
                         "frequency": 60
                     },
                     "jitter": {
                         "tool": "iperf",
-                        "is_client": true,
+                        "is_server": true,
                         "server_address": "192.168.1.1",
-                        "duration": 10,
-                        "transport_type": "udp",
+                        "duration": 20,
+                        "transport": "udp",
                         "frequency": 60
                     },
                     "packet_loss": {
                         "tool": "iperf",
-                        "is_client": true,
+                        "is_server": true,
                         "server_address": "192.168.1.1",
                         "duration": 10,
-                        "transport_type": "udp",
+                        "transport": "udp",
                         "frequency": 60
                     },
                     "latency": {
                         "tool": "ping",
-                        "is_client": true,
-                        "server_address": "192.168.1.1",
-                        "duration": 10,
-                        "transport_type": "icmp",
-                        "frequency": 60
+                        "destination_address": "192.168.1.1",
+                        "packet_count": 4,
+                        "frequency": 30
                     },
                     "alertflow_conditions": {
                         "cpu_usage": 80,
@@ -68,35 +66,33 @@
                 "link_metrics": {
                     "bandwidth": {
                         "tool": "iperf",
-                        "is_client": true,
+                        "is_server": true,
                         "server_address": "192.168.1.1",
                         "duration": 10,
-                        "transport_type": "tcp",
+                        "transport": "tcp",
                         "frequency": 60
                     },
                     "jitter": {
                         "tool": "ping",
-                        "is_client": true,
+                        "is_server": true,
                         "server_address": "192.168.1.1",
                         "duration": 10,
-                        "transport_type": "tcp",
+                        "transport": "tcp",
                         "frequency": 60
                     },
                     "packet_loss": {
                         "tool": "iperf",
-                        "is_client": true,
+                        "is_server": true,
                         "server_address": "192.168.1.1",
                         "duration": 10,
-                        "transport_type": "udp",
+                        "transport": "udp",
                         "frequency": 60
                     },
                     "latency": {
                         "tool": "ping",
-                        "is_client": true,
-                        "server_address": "192.168.1.1",
-                        "duration": 10,
-                        "transport_type": "icmp",
-                        "frequency": 60
+                        "destination_address": "192.168.1.1",
+                        "packet_count": 4,
+                        "frequency": 30
                     },
                     "alertflow_conditions": {
                         "cpu_usage": 80,

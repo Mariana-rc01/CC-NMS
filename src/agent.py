@@ -4,6 +4,7 @@ import threading
 from lib.packets import AgentRegistrationStatus, PacketType, RegisterAgentPacket
 from lib.udp import UDPServer
 
+udp_server = None
 
 def agent_packet_handler(message, server_address):
     if message.packet_type == PacketType.RegisterAgentResponse:
@@ -16,6 +17,10 @@ def agent_packet_handler(message, server_address):
         elif register_status == AgentRegistrationStatus.InvalidID:
             print("The server isn't configured to accept agents with this ID.")
             exit(1)
+    elif message.packet_type == PacketType.Task:
+        task = message.task
+        task.show()
+
 
     return None
 
@@ -28,12 +33,13 @@ def main():
 
     server_ip = sys.argv[1]
     agent_id = sys.argv[2]
-
-    server = UDPServer("0.0.0.0", 0, agent_packet_handler)
-    alert_task_thread = threading.Thread(target=server.start, daemon=True)
+    
+    global udp_server
+    udp_server = UDPServer("0.0.0.0", 0, agent_packet_handler)
+    alert_task_thread = threading.Thread(target=udp_server.start, daemon=True)
     alert_task_thread.start()
 
-    server.send_message(RegisterAgentPacket(agent_id), (server_ip, 8080))
+    udp_server.send_message(RegisterAgentPacket(agent_id), (server_ip, 8080))
 
     alert_task_thread.join()
 
