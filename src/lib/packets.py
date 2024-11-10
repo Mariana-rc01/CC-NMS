@@ -1,7 +1,7 @@
 from enum import Enum
 from queue import Full
 from lib.task_serializer import TaskSerializer
-from lib.structs import Task
+from lib.task import Task
 
 class PacketType(Enum):
     RegisterAgent = 0

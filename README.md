@@ -11,7 +11,7 @@ $ python3 src/server.py
 
 To run an agent:
 ```
-$ bin/agent src/agent.py <server_ip> <agent_id>
+$ python3 src/agent.py <server_ip> <agent_id>
 ```
 
 ## 🫂 Group

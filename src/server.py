@@ -29,7 +29,6 @@ def handle_register_agent(message, client_address):
     return RegisterAgentPacketResponse(AgentRegistrationStatus.AlreadyRegistered)
 
 def distribute_tasks_to_agents(server, tasks):
-
     for task in tasks:
         for device in task.devices:
             agent_address = agent_manager.get_agent_by_id(device.device_id)
@@ -48,9 +47,10 @@ def main():
     alert_task_thread = threading.Thread(target=server.start, daemon=True)
     alert_task_thread.start()
 
+    # TODO: Send tasks when all agents needed are connected and registered.
     time.sleep(10)
 
-    distribute_tasks_to_agents(server,tasks)
+    distribute_tasks_to_agents(server, tasks)
 
     alert_task_thread.join()
 

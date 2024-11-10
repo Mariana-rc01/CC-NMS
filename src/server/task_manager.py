@@ -1,8 +1,7 @@
 import json
-from lib.structs import Task
+from lib.task import Task
 
 def load_tasks_json(fileJson):
-    """ Carrega ficheiros"""
     try:
         with open(fileJson, 'r') as file:
             data = json.load(file)
@@ -16,5 +15,5 @@ def load_tasks_json(fileJson):
         return []
 
 def show_tasks(tasks):
-    for task in tasks: task.show()
+    for task in tasks: print(task)
 

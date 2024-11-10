@@ -1,4 +1,4 @@
-from lib.structs import *
+from lib.task import *
 
 class TaskSerializer:
     def serialize(task):
@@ -25,8 +25,6 @@ class TaskSerializer:
         return task_bytes
     
     def deserialize(data, index):
-        #index = 0
-
         task_id_len = int.from_bytes(data[index:index+4], byteorder='big')
         index += 4
 
@@ -77,7 +75,6 @@ class DeviceMetricsSerializer:
         return device_metrics_bytes
     
     def deserialize(data, index):
-        #index = 0
         cpu_usage = int.from_bytes(data[index:index+1], byteorder='big') == 1
         index += 1
         ram_usage = int.from_bytes(data[index:index+1], byteorder='big') == 1
@@ -106,9 +103,7 @@ class LinkMetricsSerializer:
         link_metrics_bytes += AlertFlowConditionsSerializer.serialize(link_metrics.alertflow_conditions)
         return link_metrics_bytes
     
-    def deserialize(data, index):
-        #index = 0
-        
+    def deserialize(data, index):        
         bandwidth, index = BandwidthSerializer.deserialize(data, index)
         jitter, index = JitterSerializer.deserialize(data, index)
         packet_loss, index = PacketLossSerializer.deserialize(data, index)
@@ -150,7 +145,6 @@ class BandwidthSerializer:
         return bandwidth_bytes
     
     def deserialize(data, index):
-        #index = 0   
         tool_len = int.from_bytes(data[index:index+4], byteorder='big')
         index += 4
         
@@ -212,7 +206,6 @@ class JitterSerializer:
         return jitter_bytes
     
     def deserialize(data, index):
-        ##index = 0        
         tool_len = int.from_bytes(data[index:index+4], byteorder='big')
         index += 4
         tool = data[index:index+tool_len].decode('utf-8')
@@ -273,7 +266,6 @@ class PacketLossSerializer:
         return packet_loss_bytes
     
     def deserialize(data, index):
-        #index = 0        
         tool_len = int.from_bytes(data[index:index+4], byteorder='big')
         index += 4
         tool = data[index:index+tool_len].decode('utf-8')
@@ -327,8 +319,6 @@ class LatencySerializer:
         return latency_bytes
     
     def deserialize(data, index):
-        #index = 0
-        
         tool_len = int.from_bytes(data[index:index+4], byteorder='big')
         index += 4
         tool = data[index:index+tool_len].decode('utf-8')
@@ -367,8 +357,6 @@ class AlertFlowConditionsSerializer:
         return alertflow_bytes
     
     def deserialize(data, index):
-        #index = 0
-        
         cpu_usage = int.from_bytes(data[index:index+4], byteorder='big')
         index += 4
         
