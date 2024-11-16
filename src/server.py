@@ -9,7 +9,7 @@ from lib.packets import (
 )
 from lib.udp import UDPServer
 from server.agents_manager import AgentManager
-from server.task_manager import load_tasks_json, show_tasks
+from server.task_json import load_tasks_json
 
 agent_manager = AgentManager()
 
@@ -29,19 +29,26 @@ def handle_register_agent(message, client_address):
     return RegisterAgentPacketResponse(AgentRegistrationStatus.AlreadyRegistered)
 
 def distribute_tasks_to_agents(server, tasks):
+    device_tasks = {}
+
+    # Group tasks by device.
     for task in tasks:
         for device in task.devices:
-            agent_address = agent_manager.get_agent_by_id(device.device_id)
-            if agent_address:
-                task_packet = TaskPacket(task)
-                server.send_message(task_packet, agent_address)
-                print(f"Task {task.task_id} sent to agent {device.device_id}")
+            device_tasks.setdefault(device.device_id, []).append(task)
+
+    # Send tasks to each agent.
+    for device in device_tasks:
+        agent_address = agent_manager.get_agent_by_id(device)
+        if agent_address:
+            task_packet = TaskPacket(device_tasks[device])
+            server.send_message(task_packet, agent_address)
+            print(f"Tasks sent to agent {device}")
 
 def main():
     print("Hello, from NMS Server!")
 
     tasks = load_tasks_json("tasks.json")
-    show_tasks(tasks)
+    for task in tasks: print(task)
 
     server = UDPServer("0.0.0.0", 8080, server_packet_handler)
     alert_task_thread = threading.Thread(target=server.start, daemon=True)

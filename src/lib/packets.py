@@ -67,29 +67,37 @@ class RegisterAgentPacketResponse():
         return RegisterAgentPacketResponse(agent_registration_status)
     
 class TaskPacket:
-    def __init__(self, taskR):
+    def __init__(self, tasks):
         self.packet_type = PacketType.Task
-        self.task = taskR
+        self.tasks = tasks
+
+    # Packet structure :
+    # | 1 byte | 1 byte | ? bytes | 
+    # | Type   | #Tasks | Task 1 | Task 2 | ... | Task N |
 
     def serialize(self):
         packet_bytes = b''
         packet_bytes += self.packet_type.value.to_bytes(1, byteorder='big')
 
-        packet_bytes += TaskSerializer.serialize(self.task)
+        # Serialize number of tasks
+        packet_bytes += len(self.tasks).to_bytes(1, byteorder='big')
+
+        # Serialize each task
+        for task in self.tasks:
+            packet_bytes += TaskSerializer.serialize(task)
 
         return packet_bytes
     
     def deserialize(data):
-        index = 0
+        tasks = []
 
-        packet_type_value = int.from_bytes(data[index:index+1], byteorder='big')
-        index += 1
+        # Deserialize number of tasks
+        num_tasks = data[1]
 
-        if packet_type_value != PacketType.Task.value:
-            raise ValueError(f"Invalid packet type: {packet_type_value}")
-       
-        taskR, _ = TaskSerializer.deserialize(data, index)
+        # Deserialize each task
+        offset = 2
+        for i in range(num_tasks):
+            task, offset = TaskSerializer.deserialize(data, offset)
+            tasks.append(task)
 
-        task_packet = TaskPacket(taskR)
-
-        return task_packet
+        return TaskPacket(tasks)
