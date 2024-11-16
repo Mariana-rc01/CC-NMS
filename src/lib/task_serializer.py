@@ -9,7 +9,7 @@ class TaskSerializer:
 
         task_bytes += task.task_frequency.to_bytes(4, byteorder='big')
 
-        # number of devices first
+        # Number of devices first
         task_bytes += len(task.devices).to_bytes(4, byteorder='big')
         for device in task.devices:
             device_id_bytes = device.device_id.encode('utf-8')

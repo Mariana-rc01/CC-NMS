@@ -4,6 +4,11 @@ import threading
 from lib.packets import AgentRegistrationStatus, PacketType, RegisterAgentPacket
 from lib.udp import UDPServer
 
+def task_runner(task):
+    print(f"Running task {task.task_id}...")
+    # TODO: Implement task runner
+
+
 def agent_packet_handler(message, server_address):
     if message.packet_type == PacketType.RegisterAgentResponse:
         register_status = message.agent_registration_status
@@ -16,9 +21,11 @@ def agent_packet_handler(message, server_address):
             print("The server isn't configured to accept agents with this ID.")
             exit(1)
     elif message.packet_type == PacketType.Task:
-        task = message.task
-        print(str(task))
-
+        tasks = message.tasks
+        for task in tasks:
+            task_thread = threading.Thread(target=task_runner, args=(task,), daemon=True)
+            task_thread.start()
+            task_thread.join()
 
     return None
 
