@@ -3,11 +3,11 @@ from lib.task import *
 class TaskSerializer:
     def serialize(task):
         task_bytes = b''
-        task_id_bytes = task.task_id.encode('utf-8')
+        task_id_bytes = task.id.encode('utf-8')
         task_bytes += len(task_id_bytes).to_bytes(4, byteorder='big')
         task_bytes += task_id_bytes
 
-        task_bytes += task.task_frequency.to_bytes(4, byteorder='big')
+        task_bytes += task.frequency.to_bytes(4, byteorder='big')
 
         # Number of devices first
         task_bytes += len(task.devices).to_bytes(4, byteorder='big')
@@ -96,29 +96,90 @@ class DeviceMetricsSerializer:
 class LinkMetricsSerializer:
     def serialize(link_metrics):
         link_metrics_bytes = b''
-        link_metrics_bytes += BandwidthSerializer.serialize(link_metrics.bandwidth)
-        link_metrics_bytes += JitterSerializer.serialize(link_metrics.jitter)
-        link_metrics_bytes += PacketLossSerializer.serialize(link_metrics.packet_loss)
-        link_metrics_bytes += LatencySerializer.serialize(link_metrics.latency)
-        link_metrics_bytes += AlertFlowConditionsSerializer.serialize(link_metrics.alertflow_conditions)
+
+        # Serialize Bandwidth
+        if link_metrics.bandwidth is not None:
+            link_metrics_bytes += b'\x01'
+            link_metrics_bytes += BandwidthSerializer.serialize(link_metrics.bandwidth)
+        else:
+            link_metrics_bytes += b'\x00'
+
+        # Serialize Jitter
+        if link_metrics.jitter is not None:
+            link_metrics_bytes += b'\x01'
+            link_metrics_bytes += JitterSerializer.serialize(link_metrics.jitter)
+        else:
+            link_metrics_bytes += b'\x00'
+
+        # Serialize Packet Loss
+        if link_metrics.packet_loss is not None:
+            link_metrics_bytes += b'\x01'
+            link_metrics_bytes += PacketLossSerializer.serialize(link_metrics.packet_loss)
+        else:
+            link_metrics_bytes += b'\x00'
+
+        # Serialize Latency
+        if link_metrics.latency is not None:
+            link_metrics_bytes += b'\x01'
+            link_metrics_bytes += LatencySerializer.serialize(link_metrics.latency)
+        else:
+            link_metrics_bytes += b'\x00'
+
+        # Serialize Alert Flow Conditions
+        if link_metrics.alertflow_conditions is not None:
+            link_metrics_bytes += b'\x01'
+            link_metrics_bytes += AlertFlowConditionsSerializer.serialize(link_metrics.alertflow_conditions)
+        else:
+            link_metrics_bytes += b'\x00'
+
         return link_metrics_bytes
-    
-    def deserialize(data, index):        
-        bandwidth, index = BandwidthSerializer.deserialize(data, index)
-        jitter, index = JitterSerializer.deserialize(data, index)
-        packet_loss, index = PacketLossSerializer.deserialize(data, index)
-        latency, index = LatencySerializer.deserialize(data, index)
-        alertflow_conditions, index = AlertFlowConditionsSerializer.deserialize(data, index)
-        
+
+    def deserialize(data, index):
+        # Deserialize Bandwidth
+        has_bandwidth = data[index] == 1
+        index += 1
+        bandwidth = None
+        if has_bandwidth:
+            bandwidth, index = BandwidthSerializer.deserialize(data, index)
+
+        # Deserialize Jitter
+        has_jitter = data[index] == 1
+        index += 1
+        jitter = None
+        if has_jitter:
+            jitter, index = JitterSerializer.deserialize(data, index)
+
+        # Deserialize Packet Loss
+        has_packet_loss = data[index] == 1
+        index += 1
+        packet_loss = None
+        if has_packet_loss:
+            packet_loss, index = PacketLossSerializer.deserialize(data, index)
+
+        # Deserialize Latency
+        has_latency = data[index] == 1
+        index += 1
+        latency = None
+        if has_latency:
+            latency, index = LatencySerializer.deserialize(data, index)
+
+        # Deserialize Alert Flow Conditions
+        has_alertflow_conditions = data[index] == 1
+        index += 1
+        alertflow_conditions = None
+        if has_alertflow_conditions:
+            alertflow_conditions, index = AlertFlowConditionsSerializer.deserialize(data, index)
+
         link_metrics = LinkMetrics(
-            bandwidth = bandwidth.__dict__,
-            jitter = jitter.__dict__,
-            packet_loss = packet_loss.__dict__,
-            latency = latency.__dict__,
-            alertflow_conditions = alertflow_conditions.__dict__
+            bandwidth=bandwidth.__dict__ if bandwidth else None,
+            jitter=jitter.__dict__ if jitter else None,
+            packet_loss=packet_loss.__dict__ if packet_loss else None,
+            latency=latency.__dict__ if latency else None,
+            alertflow_conditions=alertflow_conditions.__dict__ if alertflow_conditions else None
         )
 
         return link_metrics, index
+
 
 class BandwidthSerializer:
     def serialize(bandwidth):

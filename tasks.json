@@ -1,7 +1,7 @@
 [
     {
         "task_id": "task-1",
-        "frequency": 20,
+        "frequency": 10,
         "devices": [
             {
                 "device_id": "1",
@@ -11,35 +11,21 @@
                     "interface_stats": ["eth0", "eth1"]
                 },
                 "link_metrics": {
-                    "bandwidth": {
-                        "tool": "iperf",
-                        "is_server": true,
-                        "server_address": "192.168.1.1",
-                        "duration": 10,
-                        "transport": "udp",
-                        "frequency": 60
-                    },
                     "jitter": {
                         "tool": "iperf",
                         "is_server": true,
                         "server_address": "192.168.1.1",
-                        "duration": 20,
+                        "duration": 2,
                         "transport": "udp",
                         "frequency": 60
                     },
-                    "packet_loss": {
+                    "bandwidth": {
                         "tool": "iperf",
                         "is_server": true,
                         "server_address": "192.168.1.1",
-                        "duration": 10,
+                        "duration": 2,
                         "transport": "udp",
                         "frequency": 60
-                    },
-                    "latency": {
-                        "tool": "ping",
-                        "destination_address": "192.168.1.1",
-                        "packet_count": 4,
-                        "frequency": 30
                     },
                     "alertflow_conditions": {
                         "cpu_usage": 80,
@@ -49,50 +35,38 @@
                         "jitter": 100
                     }
                 }
-            }
-        ]
-    },
-    {
-        "task_id": "task-2",
-        "frequency": 50,
-        "devices": [
+            },
             {
                 "device_id": "2",
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
-                    "interface_stats": ["eth1", "eth2"]
+                    "interface_stats": ["eth0", "eth1"]
                 },
                 "link_metrics": {
-                    "bandwidth": {
+                    "jitter": {
                         "tool": "iperf",
-                        "is_server": true,
-                        "server_address": "192.168.1.1",
-                        "duration": 10,
-                        "transport": "tcp",
+                        "is_server": false,
+                        "server_address": "10.0.2.1",
+                        "duration": 2,
+                        "transport": "udp",
                         "frequency": 60
                     },
-                    "jitter": {
-                        "tool": "ping",
-                        "is_server": true,
-                        "server_address": "192.168.1.1",
-                        "duration": 10,
-                        "transport": "tcp",
+                    "bandwidth": {
+                        "tool": "iperf",
+                        "is_server": false,
+                        "server_address": "10.0.2.1",
+                        "duration": 2,
+                        "transport": "udp",
                         "frequency": 60
                     },
                     "packet_loss": {
                         "tool": "iperf",
                         "is_server": true,
                         "server_address": "192.168.1.1",
-                        "duration": 10,
+                        "duration": 2,
                         "transport": "udp",
                         "frequency": 60
-                    },
-                    "latency": {
-                        "tool": "ping",
-                        "destination_address": "192.168.1.1",
-                        "packet_count": 4,
-                        "frequency": 30
                     },
                     "alertflow_conditions": {
                         "cpu_usage": 80,
