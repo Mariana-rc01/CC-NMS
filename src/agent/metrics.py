@@ -1,3 +1,4 @@
+from lib.logging import log
 from agent.tools import iperf, ping
 
 class MetricsResult:
@@ -28,12 +29,12 @@ def calculate_bandwidth(config):
         if iperf_result.bandwidth is not None:
             return iperf_result.bandwidth
     else:
-        print(f"{config.tool} tool is not supported for bandwidth.")
+        log(f"{config.tool} tool is not supported for bandwidth.", "ERROR")
 
 def calculate_jitter(config):
     if config.tool == "iperf":
         if config.transport == "tcp":
-            print("jitter is only supported for UDP.")
+            log("jitter is only supported for UDP.", "ERROR")
             return None
         
         if config.is_server:
@@ -43,15 +44,18 @@ def calculate_jitter(config):
         if iperf_result.jitter is not None:
             return iperf_result.jitter
     else:
-        print(f"{config.tool} tool is not supported for jitter.")
+        log(f"{config.tool} tool is not supported for jitter.", "ERROR")
 
 def calculate_packet_loss(config):
-    if config.tool == "ping":
-        ping_result = ping(config.destination_address, config.packet_count, config.frequency)
-        if ping_result.packet_loss is not None:
-            return ping_result.packet_loss
-    elif config.tool == "iperf":
-        print("iperf tool is not implemented yet.")
+    if config.tool == "iperf":
+        if config.is_server:
+            return None
+        
+        iperf_result = iperf(config.is_server, config.server_address, config.duration, config.transport)
+        if iperf_result.packet_loss is not None:
+            return iperf_result.packet_loss
+    else:
+        log(f"{config.tool} tool is not supported for packet loss.", "ERROR")
 
 def calculate_latency(config):
     if config.tool == "ping":
@@ -59,4 +63,4 @@ def calculate_latency(config):
         if ping_result.latency is not None:
             return ping_result.latency
     elif config.tool == "iperf":
-        print("iperf tool is not implemented yet.")
+        log(f"{config.tool} tool is not supported for latency.", "ERROR")

@@ -1,6 +1,7 @@
 import subprocess
 import re
 import time
+from logging import log
 
 class PingResult:
     def __init__(self, packet_loss, latency, error):
@@ -9,7 +10,6 @@ class PingResult:
         self.error = error
 
 def ping(destination_address, packet_count, frequency):
-    print(f"Pinging {destination_address} with {packet_count} packets at {frequency} second intervals...")
     try:
         command = ["ping", "-c", str(packet_count), "-i", str(frequency), destination_address]
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -37,18 +37,20 @@ def ping(destination_address, packet_count, frequency):
         
         return PingResult(packet_loss, latency, None)
     except Exception as e:
+        log(f"Failed to execute ping command: {str(e)}", "ERROR")
         return PingResult(None, None, f"failed to execute ping command: {str(e)}")
     
 class IperfResult:
-    def __init__(self, bandwidth, jitter, error):
+    def __init__(self, bandwidth, jitter, packet_loss, error):
         self.bandwidth = bandwidth
         self.jitter = jitter
+        self.packet_loss = packet_loss
         self.error = error
 
 def iperf(is_server, server_address=None, duration=10, transport_type="tcp"):
     try:
         if is_server:
-            command = ["iperf", "-s"]
+            command = ["iperf", "-s", "-i", "1"]
             if transport_type.lower() == "udp":
                 command.append("-u")
             subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -68,16 +70,16 @@ def iperf(is_server, server_address=None, duration=10, transport_type="tcp"):
                     # If successful, break out of the loop
                     break
                 else:
-                    print(f"Attempt {attempt + 1} failed: {result.stderr}")
                     if attempt < 3:  # Wait 1 second before the next try if not the last attempt
                         time.sleep(1)
             else:
                 # If all attempts fail
                 return IperfResult(None, None, "iperf command failed after 4 attempts")
 
-        # Extract bandwidth and jitter (only for UDP server)
+        # Extract bandwidth, jitter and packet loss (only for UDP server)
         bandwidth = None
         jitter = None
+        packet_loss = None
         output = result.stdout
 
         if transport_type.lower() == "udp":
@@ -86,11 +88,16 @@ def iperf(is_server, server_address=None, duration=10, transport_type="tcp"):
             if match:
                 jitter = float(match.group(1).replace(" ms", ""))
 
+            # Extract packet loss
+            match = re.search(r"(\d+)%", output)
+            if match:
+                packet_loss = float(match.group(1))
+
         # Extract bandwidth for both TCP and UDP
         match = re.search(r"([\d.]+ \w+/sec)", output)
         if match:
             bandwidth = match.group(1)
 
-        return IperfResult(bandwidth, jitter, None)
+        return IperfResult(bandwidth, jitter, packet_loss, None)
     except Exception as e:
-        return IperfResult(None, None, f"Failed to execute iperf command: {str(e)}")
+        return IperfResult(None, None, None, f"Failed to execute iperf command: {str(e)}")

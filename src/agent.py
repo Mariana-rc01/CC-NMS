@@ -6,6 +6,7 @@ from lib.packets import AgentRegistrationStatus, PacketType, RegisterAgentPacket
 from lib.udp import UDPServer
 from agent.metrics import MetricsResult, calculate_bandwidth, calculate_jitter, calculate_packet_loss, calculate_latency
 from agent.tools import iperf
+from lib.logging import log
 
 agent_id = None
 
@@ -16,22 +17,22 @@ def task_runner(task):
 
     # Bandwidth
     if subtasks.bandwidth and subtasks.bandwidth.is_server == False:
-        print("Calculating Bandwidth")
+        log(f"Calculating Bandwidth for task ({task.id}).")
         result.set_bandwidth(calculate_bandwidth(subtasks.bandwidth))
 
     # Jitter
     if subtasks.jitter and subtasks.jitter.is_server == False:
-        print("Calculating Jitter")
+        log(f"Calculating Jitter for task ({task.id}).")
         result.set_jitter(calculate_jitter(subtasks.jitter))
 
     # Packet Loss
     if subtasks.packet_loss and subtasks.packet_loss.is_server == False:
-        print("Calculating Packet Loss")
+        log(f"Calculating Packet Loss for task ({task.id}).")
         result.set_packet_loss(calculate_packet_loss(subtasks.packet_loss))
 
     # Latency
     if subtasks.latency:
-        print("Calculating Latency")
+        log(f"Calculating Latency for task ({task.id}).")
         result.set_latency(calculate_latency(subtasks.latency))
 
     print(result.__dict__)
@@ -61,7 +62,7 @@ def maybe_start_iperf_servers(tasks):
                         break
 
     if has_server:
-        print("Starting iperf servers")
+        log("Starting iperf servers for TCP and UDP.")
         threading.Thread(target=iperf, args=(True, None, 0, "tcp"), daemon=True).start()
         threading.Thread(target=iperf, args=(True, None, 0, "udp"), daemon=True).start()
 
@@ -70,12 +71,12 @@ def agent_packet_handler(message, server_address):
     if message.packet_type == PacketType.RegisterAgentResponse:
         register_status = message.agent_registration_status
         if register_status == AgentRegistrationStatus.Success:
-            print("Agent registered successfully.")
+            log("Agent registered successfully.")
         elif register_status == AgentRegistrationStatus.AlreadyRegistered:
-            print("An agent with this ID is already registered.")
+            log("An agent with this ID is already registered.", "ERROR")
             exit(1)
         elif register_status == AgentRegistrationStatus.InvalidID:
-            print("The server isn't configured to accept agents with this ID.")
+            log("The server isn't configured to accept agents with this ID.", "ERROR")
             exit(1)
     elif message.packet_type == PacketType.Task:
         # Received tasks from the server
@@ -91,7 +92,7 @@ def agent_packet_handler(message, server_address):
 
 def main():
     global agent_id
-    print("Hello, from NMS Agent!")
+    log("Starting up NMS agent.")
 
     if len(sys.argv) != 3:
         print("Usage: python " + sys.argv[0] + " <server_ip> <agent_id>")

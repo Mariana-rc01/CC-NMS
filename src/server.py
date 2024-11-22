@@ -9,6 +9,7 @@ from lib.packets import (
 from lib.udp import UDPServer
 from server.agents_manager import AgentManager
 from server.task_json import load_tasks_json
+from lib.logging import log
 
 agent_manager = AgentManager()
 all_agents_registered = threading.Condition()
@@ -22,7 +23,7 @@ def server_packet_handler(message, client_address):
 def handle_register_agent(message, client_address):
     agent_id = message.agent_id
     if agent_manager.register_agent(agent_id, client_address):
-        print(f"Agent {agent_id} registered.")
+        log(f"Agent {agent_id} registered.")
 
         # Check if all required agents are registered
         with all_agents_registered:
@@ -48,14 +49,12 @@ def distribute_tasks_to_agents(server, tasks):
         if agent_address:
             task_packet = TaskPacket(device_tasks[device])
             server.send_message(task_packet, agent_address)
-            print(f"Tasks sent to agent {device}")
+            log(f"Tasks sent to agent with ID {device}.")
 
 def main():
-    print("Hello, from NMS Server!")
+    log("Starting up NMS server.")
 
     tasks = load_tasks_json("tasks.json")
-    for task in tasks:
-        print(task)
 
     # Store device IDs to check if all required agents are registered
     for task in tasks:

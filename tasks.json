@@ -27,6 +27,14 @@
                         "transport": "udp",
                         "frequency": 60
                     },
+                    "packet_loss": {
+                        "tool": "iperf",
+                        "is_server": false,
+                        "duration": 2,
+                        "server_address": "10.0.2.1",
+                        "transport": "udp",
+                        "frequency": 60
+                    },
                     "alertflow_conditions": {
                         "cpu_usage": 80,
                         "ram_usage": 90,
@@ -63,10 +71,10 @@
                     "packet_loss": {
                         "tool": "iperf",
                         "is_server": true,
-                        "server_address": "192.168.1.1",
                         "duration": 2,
+                        "server_address": "10.0.2.1",
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 1
                     },
                     "alertflow_conditions": {
                         "cpu_usage": 80,
