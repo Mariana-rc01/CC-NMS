@@ -1,7 +1,7 @@
 class Task:
     def __init__(self, taskR):
-        self.task_id = taskR.get("task_id")
-        self.task_frequency = taskR.get("frequency")
+        self.id = taskR.get("task_id")
+        self.frequency = taskR.get("frequency")
         self.devices = [
             Device(deviceR["device_id"], deviceR["device_metrics"], deviceR["link_metrics"])
             for deviceR in taskR.get("devices", [])
@@ -9,7 +9,7 @@ class Task:
 
     def __str__(self):
         devices_str = "\n\t".join([str(device).replace("\n", "\n\t") for device in self.devices])
-        return f"Task:\n\tID: {self.task_id}\n\tFrequency: {self.task_frequency}\n\tDevices:\n\t{devices_str}"
+        return f"Task:\n\tID: {self.id}\n\tFrequency: {self.frequency}\n\tDevices:\n\t{devices_str}"
 
 
 class Device:
@@ -37,34 +37,38 @@ class Device:
 
 
 class DeviceMetrics:
-    def __init__(self, cpu_usage, ram_usage, interface_stats):
+    def __init__(self, cpu_usage=None, ram_usage=None, interface_stats=None):
         self.cpu_usage = cpu_usage
         self.ram_usage = ram_usage
         self.interface_stats = interface_stats
 
     def __str__(self):
         return (
-            f"CPU Usage: {self.cpu_usage}\n\tRAM Usage: {self.ram_usage}\n\tInterface Stats: {self.interface_stats}"
+            f"CPU Usage: {self.cpu_usage or 'Not Provided'}\n\tRAM Usage: {self.ram_usage or 'Not Provided'}"
+            f"\n\tInterface Stats: {self.interface_stats or 'Not Provided'}"
         )
 
 
 class LinkMetrics:
-    def __init__(self, bandwidth, jitter, packet_loss, latency, alertflow_conditions):
-        self.bandwidth = BandwidthMetric(**bandwidth)
-        self.jitter = JitterMetric(**jitter)
-        self.packet_loss = PacketLossMetric(**packet_loss)
-        self.latency = LatencyMetric(**latency)
-        self.alertflow_conditions = AlertFlowConditions(**alertflow_conditions)
+    def __init__(self, bandwidth=None, jitter=None, packet_loss=None, latency=None, alertflow_conditions=None):
+        self.bandwidth = BandwidthMetric(**bandwidth) if bandwidth else None
+        self.jitter = JitterMetric(**jitter) if jitter else None
+        self.packet_loss = PacketLossMetric(**packet_loss) if packet_loss else None
+        self.latency = LatencyMetric(**latency) if latency else None
+        self.alertflow_conditions = (
+            AlertFlowConditions(**alertflow_conditions) if alertflow_conditions else None
+        )
 
     def __str__(self):
         return (
-            f"Bandwidth:\n\t{self.bandwidth}\n\tJitter:\n\t{self.jitter}\n\tPacket Loss:\n\t{self.packet_loss}"
-            f"\n\tLatency:\n\t{self.latency}\n\tAlert Flow Conditions:\n\t{self.alertflow_conditions}"
+            f"Bandwidth:\n\t{self.bandwidth or 'Not Provided'}\n\tJitter:\n\t{self.jitter or 'Not Provided'}"
+            f"\n\tPacket Loss:\n\t{self.packet_loss or 'Not Provided'}\n\tLatency:\n\t{self.latency or 'Not Provided'}"
+            f"\n\tAlert Flow Conditions:\n\t{self.alertflow_conditions or 'Not Provided'}"
         )
 
 
 class BandwidthMetric:
-    def __init__(self, tool, is_server, server_address, duration, transport, frequency):
+    def __init__(self, tool=None, is_server=None, server_address=None, duration=None, transport=None, frequency=None):
         self.tool = tool
         self.is_server = is_server
         self.server_address = server_address
@@ -74,13 +78,16 @@ class BandwidthMetric:
 
     def __str__(self):
         return (
-            f"Tool: {self.tool}\n\tIs Server: {self.is_server}\n\tServer Address: {self.server_address}"
-            f"\n\tDuration: {self.duration}\n\tTransport: {self.transport}\n\tFrequency: {self.frequency}"
+            f"Tool: {self.tool or 'Not Provided'}\n\tIs Server: {self.is_server or 'Not Provided'}"
+            f"\n\tServer Address: {self.server_address or 'Not Provided'}"
+            f"\n\tDuration: {self.duration or 'Not Provided'}"
+            f"\n\tTransport: {self.transport or 'Not Provided'}"
+            f"\n\tFrequency: {self.frequency or 'Not Provided'}"
         )
 
 
 class JitterMetric:
-    def __init__(self, tool, is_server, server_address, duration, transport, frequency):
+    def __init__(self, tool=None, is_server=None, server_address=None, duration=None, transport=None, frequency=None):
         self.tool = tool
         self.is_server = is_server
         self.server_address = server_address
@@ -90,13 +97,16 @@ class JitterMetric:
 
     def __str__(self):
         return (
-            f"Tool: {self.tool}\n\tIs Server: {self.is_server}\n\tServer Address: {self.server_address}"
-            f"\n\tDuration: {self.duration}\n\tTransport: {self.transport}\n\tFrequency: {self.frequency}"
+            f"Tool: {self.tool or 'Not Provided'}\n\tIs Server: {self.is_server or 'Not Provided'}"
+            f"\n\tServer Address: {self.server_address or 'Not Provided'}"
+            f"\n\tDuration: {self.duration or 'Not Provided'}"
+            f"\n\tTransport: {self.transport or 'Not Provided'}"
+            f"\n\tFrequency: {self.frequency or 'Not Provided'}"
         )
 
 
 class PacketLossMetric:
-    def __init__(self, tool, is_server, server_address, duration, transport, frequency):
+    def __init__(self, tool=None, is_server=None, server_address=None, duration=None, transport=None, frequency=None):
         self.tool = tool
         self.is_server = is_server
         self.server_address = server_address
@@ -106,13 +116,16 @@ class PacketLossMetric:
 
     def __str__(self):
         return (
-            f"Tool: {self.tool}\n\tIs Server: {self.is_server}\n\tServer Address: {self.server_address}"
-            f"\n\tDuration: {self.duration}\n\tTransport: {self.transport}\n\tFrequency: {self.frequency}"
+            f"Tool: {self.tool or 'Not Provided'}\n\tIs Server: {self.is_server or 'Not Provided'}"
+            f"\n\tServer Address: {self.server_address or 'Not Provided'}"
+            f"\n\tDuration: {self.duration or 'Not Provided'}"
+            f"\n\tTransport: {self.transport or 'Not Provided'}"
+            f"\n\tFrequency: {self.frequency or 'Not Provided'}"
         )
 
 
 class LatencyMetric:
-    def __init__(self, tool, destination_address, packet_count, frequency):
+    def __init__(self, tool=None, destination_address=None, packet_count=None, frequency=None):
         self.tool = tool
         self.destination_address = destination_address
         self.packet_count = packet_count
@@ -120,13 +133,13 @@ class LatencyMetric:
 
     def __str__(self):
         return (
-            f"Tool: {self.tool}\n\tDestination Address: {self.destination_address}\n\tPacket Count: {self.packet_count}"
-            f"\n\tFrequency: {self.frequency}"
+            f"Tool: {self.tool or 'Not Provided'}\n\tDestination Address: {self.destination_address or 'Not Provided'}"
+            f"\n\tPacket Count: {self.packet_count or 'Not Provided'}\n\tFrequency: {self.frequency or 'Not Provided'}"
         )
 
 
 class AlertFlowConditions:
-    def __init__(self, cpu_usage, ram_usage, interface_stats, packet_loss, jitter):
+    def __init__(self, cpu_usage=None, ram_usage=None, interface_stats=None, packet_loss=None, jitter=None):
         self.cpu_usage = cpu_usage
         self.ram_usage = ram_usage
         self.interface_stats = interface_stats
@@ -135,6 +148,7 @@ class AlertFlowConditions:
 
     def __str__(self):
         return (
-            f"CPU Usage: {self.cpu_usage}\n\tRAM Usage: {self.ram_usage}\n\tInterface Stats: {self.interface_stats}"
-            f"\n\tPacket Loss: {self.packet_loss}\n\tJitter: {self.jitter}"
+            f"CPU Usage: {self.cpu_usage or 'Not Provided'}\n\tRAM Usage: {self.ram_usage or 'Not Provided'}"
+            f"\n\tInterface Stats: {self.interface_stats or 'Not Provided'}"
+            f"\n\tPacket Loss: {self.packet_loss or 'Not Provided'}\n\tJitter: {self.jitter or 'Not Provided'}"
         )
