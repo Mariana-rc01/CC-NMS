@@ -1,4 +1,7 @@
 import threading
+import sys
+from time import localtime
+import time
 
 from lib.packets import (
     AgentRegistrationStatus,
@@ -8,16 +11,31 @@ from lib.packets import (
 )
 from lib.udp import UDPServer
 from server.agents_manager import AgentManager
+from server.database import insert_metrics, setup_database
 from server.task_json import load_tasks_json
 from lib.logging import log
 
 agent_manager = AgentManager()
 all_agents_registered = threading.Condition()
 required_agents = set()
+db_path = None
 
-def server_packet_handler(message, client_address):
+def server_packet_handler(message, client_address, server):
     if message.packet_type == PacketType.RegisterAgent:
         return handle_register_agent(message, client_address)
+    elif message.packet_type == PacketType.Metrics:
+        return handle_metrics(message, client_address)
+    return None
+
+def handle_metrics(message, client_address):
+    global db_path
+
+    if message.device_id in agent_manager.agent_ids:
+        log(f"Metrics received from agent with ID {message.device_id}.")
+        
+        # Store metrics in the database
+        insert_metrics(db_path, message.task_id, message.device_id, message.bandwidth, message.jitter, message.loss, message.latency, time.strftime('%Y-%m-%d %H:%M:%S', localtime(message.timestamp)))
+        return None
     return None
 
 def handle_register_agent(message, client_address):
@@ -52,9 +70,18 @@ def distribute_tasks_to_agents(server, tasks):
             log(f"Tasks sent to agent with ID {device}.")
 
 def main():
+    global db_path
+
     log("Starting up NMS server.")
 
-    tasks = load_tasks_json("tasks.json")
+    if len(sys.argv) != 3:
+        print("Usage: python " + sys.argv[0] + " <tasks-json-file> <metrics-db-file>")
+        sys.exit(1)
+
+    tasks = load_tasks_json(sys.argv[1])
+
+    db_path = sys.argv[2]
+    setup_database(db_path)
 
     # Store device IDs to check if all required agents are registered
     for task in tasks:

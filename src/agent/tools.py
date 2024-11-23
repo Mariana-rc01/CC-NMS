@@ -96,7 +96,7 @@ def iperf(is_server, server_address=None, duration=10, transport_type="tcp"):
         # Extract bandwidth for both TCP and UDP
         match = re.search(r"([\d.]+ \w+/sec)", output)
         if match:
-            bandwidth = match.group(1)
+            bandwidth = float(match.group(1).replace(" Mbits/sec", ""))
 
         return IperfResult(bandwidth, jitter, packet_loss, None)
     except Exception as e:

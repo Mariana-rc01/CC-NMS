@@ -6,12 +6,17 @@ This project was developed for the Computer Communications and Networks class an
 
 To run the server:
 ```
-$ python3 src/server.py
+$ python3 src/server.py <tasks-file> <metrics-database-file>
 ```
 
 To run an agent:
 ```
 $ python3 src/agent.py <server_ip> <agent_id>
+```
+
+To view a metrics db file:
+```
+$ python3 src/viewer.py <metrics-database-file>
 ```
 
 ## 🫂 Group

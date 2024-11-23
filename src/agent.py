@@ -2,7 +2,7 @@ import sys
 import threading
 import time
 
-from lib.packets import AgentRegistrationStatus, PacketType, RegisterAgentPacket
+from lib.packets import AgentRegistrationStatus, MetricsPacket, PacketType, RegisterAgentPacket
 from lib.udp import UDPServer
 from agent.metrics import MetricsResult, calculate_bandwidth, calculate_jitter, calculate_packet_loss, calculate_latency
 from agent.tools import iperf
@@ -10,7 +10,7 @@ from lib.logging import log
 
 agent_id = None
 
-def task_runner(task):
+def task_runner(task, server_address, udp_server):
     global agent_id
     subtasks = list(filter(lambda device: device.device_id == agent_id, task.devices))[0].link_metrics
     result = MetricsResult()
@@ -35,14 +35,20 @@ def task_runner(task):
         log(f"Calculating Latency for task ({task.id}).")
         result.set_latency(calculate_latency(subtasks.latency))
 
-    print(result.__dict__)
-    return result
+    if not result.bandwidth and not result.jitter and not result.packet_loss and not result.latency:
+        # No metrics were able to be recorded
+        return
 
-def run_task_periodically(task):
+    # Send the results back to the server
+    packet = MetricsPacket(task.id, agent_id, result.bandwidth, result.jitter, result.packet_loss, result.latency, time.time())
+    udp_server.send_message(packet, server_address)
+
+
+def run_task_periodically(task, server_address, udp_server):
     def run():
         while True:
             # Run task_runner in a separate thread
-            threading.Thread(target=task_runner, args=(task,), daemon=True).start()
+            threading.Thread(target=task_runner, args=(task, server_address, udp_server), daemon=True).start()
             time.sleep(task.frequency)
 
     # Start the periodic timer in a separate daemon thread
@@ -67,7 +73,7 @@ def maybe_start_iperf_servers(tasks):
         threading.Thread(target=iperf, args=(True, None, 0, "udp"), daemon=True).start()
 
 
-def agent_packet_handler(message, server_address):
+def agent_packet_handler(message, server_address, server):
     if message.packet_type == PacketType.RegisterAgentResponse:
         register_status = message.agent_registration_status
         if register_status == AgentRegistrationStatus.Success:
@@ -85,7 +91,7 @@ def agent_packet_handler(message, server_address):
         maybe_start_iperf_servers(tasks)
 
         for task in tasks:
-            task_thread = threading.Thread(target=run_task_periodically, args=(task,), daemon=True)
+            task_thread = threading.Thread(target=run_task_periodically, args=(task, server_address, server), daemon=True)
             task_thread.start()
 
     return None

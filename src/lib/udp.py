@@ -40,7 +40,7 @@ class UDPServer:
             received_packet = Packet.deserialize(message)
             
             # Call the handler to process the packet
-            response = self.handler(received_packet, client_address)
+            response = self.handler(received_packet, client_address, self)
             
             # If a response is provided, serialize and send it back to the client
             if response:

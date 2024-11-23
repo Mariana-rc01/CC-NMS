@@ -86,5 +86,34 @@
                 }
             }
         ]
+    },
+    {
+        "task_id": "task-2",
+        "frequency": 3,
+        "devices": [
+            {
+                "device_id": "2",
+                "device_metrics": {
+                    "cpu_usage": true,
+                    "ram_usage": true,
+                    "interface_stats": ["eth0", "eth1"]
+                },
+                "link_metrics": {
+                    "latency": {
+                        "tool": "ping",
+                        "destination_address": "10.0.0.1",
+                        "packet_count": 3,
+                        "frequency": 1
+                    },
+                    "alertflow_conditions": {
+                        "cpu_usage": 80,
+                        "ram_usage": 90,
+                        "interface_stats": 2000,
+                        "packet_loss": 5,
+                        "jitter": 100
+                    }
+                }
+            }
+        ]
     }
 ]
