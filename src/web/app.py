@@ -15,11 +15,11 @@ def query_db(query, args=(), one=False):
 
 @app.route('/')
 def index():
-    # Consultar métricas
+    # View all metrics
     metrics_query = "SELECT * FROM packets"
     metrics = query_db(metrics_query)
 
-    # Consultar alertas
+    # View all alerts
     alerts_query = "SELECT * FROM alertflow"
     alerts = query_db(alerts_query)
 
