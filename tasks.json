@@ -77,11 +77,11 @@
                         "frequency": 1
                     },
                     "alertflow_conditions": {
-                        "cpu_usage": 80,
-                        "ram_usage": 90,
+                        "cpu_usage": 0,
+                        "ram_usage": 0,
                         "interface_stats": 2000,
-                        "packet_loss": 5,
-                        "jitter": 100
+                        "packet_loss": 0,
+                        "jitter": 0
                     }
                 }
             }
@@ -106,11 +106,11 @@
                         "frequency": 1
                     },
                     "alertflow_conditions": {
-                        "cpu_usage": 80,
-                        "ram_usage": 90,
+                        "cpu_usage": 0,
+                        "ram_usage": 0,
                         "interface_stats": 2000,
-                        "packet_loss": 5,
-                        "jitter": 100
+                        "packet_loss": 0,
+                        "jitter": 0
                     }
                 }
             }

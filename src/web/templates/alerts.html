@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts - NMS Dashboard{% endblock %}
+
+{% block content %}
+    <h2>Alerts</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Alert ID</th>
+                <th>Task ID</th>
+                <th>Device ID</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alert in alerts %}
+                <tr>
+                    <td>{{ alert["alert_id"] }}</td>
+                    <td>{{ alert["task_id"] }}</td>
+                    <td>{{ alert["device_id"] }}</td>
+                    <td>{{ alert["alert_type"] }}</td>
+                    <td>{{ alert["details"] }}</td>
+                    <td>{{ alert["timestamp"] }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
