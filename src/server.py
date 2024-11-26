@@ -4,7 +4,9 @@ from time import localtime
 import time
 
 from lib.packets import (
+    ACKPacket,
     AgentRegistrationStatus,
+    Packet,
     PacketType,
     RegisterAgentPacketResponse,
     TaskPacket
@@ -24,6 +26,12 @@ required_agents = set()
 db_path = None
 
 def server_packet_handler(message, client_address, server):
+    if message.ack_number != 0:
+        log(f"ACK received for sequence {message.ack_number} from {client_address}.")
+        return
+    ack_packet = ACKPacket(0, message.sequence_number)
+    server.send_message(ack_packet, client_address)
+
     if message.packet_type == PacketType.RegisterAgent:
         return handle_register_agent(message, client_address)
     elif message.packet_type == PacketType.Metrics:
@@ -56,7 +64,7 @@ def handle_register_agent(message, client_address):
 
     return RegisterAgentPacketResponse(AgentRegistrationStatus.AlreadyRegistered)
 
-def handle_client(client_socket, client_address):
+def handle_agent_alert(client_socket, client_address):
     try:
         # Receives the message
         data = client_socket.recv(1024)
@@ -93,9 +101,12 @@ def distribute_tasks_to_agents(server, tasks):
     for device in device_tasks:
         agent_address = agent_manager.get_agent_by_id(device)
         if agent_address:
-            task_packet = TaskPacket(device_tasks[device])
+            task_packet = TaskPacket(device_tasks[device], None, None)
             server.send_message(task_packet, agent_address)
             log(f"Tasks sent to agent with ID {device}.")
+            # Received ack:
+            server_packet_handler(ACKPacket(0, task_packet.sequence_number), agent_address, server)
+            # here we need to be careful when the task isn't send to the agent, we need to resend it
 
 def main():
     global db_path

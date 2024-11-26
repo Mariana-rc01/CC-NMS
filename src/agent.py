@@ -2,7 +2,7 @@ import sys
 import threading
 import time
 
-from lib.packets import AgentRegistrationStatus, MetricsPacket, PacketType, RegisterAgentPacket
+from lib.packets import ACKPacket, AgentRegistrationStatus, MetricsPacket, Packet, PacketType, RegisterAgentPacket
 from lib.udp import UDPServer
 from agent.metrics import MetricsResult, calculate_bandwidth, calculate_jitter, calculate_packet_loss, calculate_latency
 from agent.conditions import ConditionsResult, calculate_cpu_usage, calculate_ram_usage, calculate_interface_stats
@@ -64,7 +64,6 @@ def task_runner(task, server_address, udp_server, tcp_client):
     udp_server.send_message(packet, server_address)
 
     alerts = check_critical_changes(resultConditions, alterflow_conditions)
-    log(f"Device {agent_id} has alerts.")
     for alert, alert_type in alerts:
         alert_message = AlertMessage(
             task_id=task.id,
@@ -126,6 +125,13 @@ def maybe_start_iperf_servers(tasks):
 
 
 def agent_packet_handler(message, server_address, server, tcp_client):
+    if message.ack_number != 0:
+        log(f"ACK received for sequence {message.ack_number}")
+        return
+    
+    ack_packet = ACKPacket(sequence_number=0, ack_number=message.sequence_number)
+    server.send_message(ack_packet, server_address)
+
     if message.packet_type == PacketType.RegisterAgentResponse:
         register_status = message.agent_registration_status
         if register_status == AgentRegistrationStatus.Success:
@@ -165,7 +171,7 @@ def main():
     net_task_thread = threading.Thread(target=udp_server.start, daemon=True)
     net_task_thread.start()
 
-    udp_server.send_message(RegisterAgentPacket(agent_id), (server_ip, 8080))
+    udp_server.send_message(RegisterAgentPacket(agent_id, None, None), (server_ip, 8080))
 
     net_task_thread.join()
 
