@@ -6,7 +6,7 @@ from lib.logging import log
 
 
 class UDPServer:
-    def __init__(self, host, port, handler, retransmission_timeout=2, max_retries=3):
+    def __init__(self, host, port, handler, retransmission_timeout=2, max_retries=3, flow_control=20):
         self.host = host
         self.port = port
         self.handler = handler
@@ -18,6 +18,9 @@ class UDPServer:
         self.lock = threading.Lock()
         self.retransmission_timeout = retransmission_timeout
         self.max_retries = max_retries
+        self.flow_control = flow_control
+        self.flow_condition = threading.Condition()
+
 
     def start(self):
         self.is_running = True
@@ -75,7 +78,15 @@ class UDPServer:
                 log(f"ACK received for sequence {ack_packet.ack_number}")
                 ack_event.set()  # Signal the waiting thread
 
+        with self.flow_condition:
+            self.flow_condition.notify_all()
+
     def send_message(self, message, client_address):
+        with self.flow_condition:
+            while len(self.sent_packets) >= self.flow_control:
+                log(f"Flow control limit reached. Waiting for packets to be acknowledged.")
+                self.flow_condition.wait()
+
         # Send a message with retransmission logic.
         if message.packet_type == PacketType.ACK or message.packet_type == PacketType.RegisterAgentResponse:
             # No need for retransmission
@@ -107,6 +118,9 @@ class UDPServer:
                 log(f"ACK received for sequence {message.sequence_number}, stopping retransmission.")
                 with self.lock:
                     self.sent_packets.pop(message.sequence_number, None)  # Clean up
+
+                with self.flow_condition:
+                    self.flow_condition.notify_all()
                 return True  # ACK received, message delivered
 
             # Timeout, increment retry count
@@ -117,4 +131,7 @@ class UDPServer:
         log(f"Failed to deliver message with sequence {message.sequence_number} after {self.max_retries} attempts.")
         with self.lock:
             self.sent_packets.pop(message.sequence_number, None)
+
+        with self.flow_condition:
+            self.flow_condition.notify_all()
         return False

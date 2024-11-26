@@ -25,11 +25,28 @@ def index():
 
     return render_template("index.html", metrics=metrics, alerts=alerts)
 
-
 @app.route('/metrics')
 def metrics():
+    task_id = request.args.get('task_id')
+    device_id = request.args.get('device_id')
+
     query = "SELECT * FROM packets"
-    data = query_db(query)
+    params = []
+
+    filters = []
+    if task_id:
+        filters.append("task_id = ?")
+        params.append(task_id)
+    if device_id:
+        filters.append("device_id = ?")
+        params.append(device_id)
+
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+
+    query += " ORDER BY timestamp DESC"
+
+    data = query_db(query, params)
     return render_template("metrics.html", metrics=data)
 
 @app.route('/alerts')
