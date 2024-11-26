@@ -129,7 +129,7 @@ def agent_packet_handler(message, server_address, server, tcp_client):
         log(f"ACK received for sequence {message.ack_number}")
         return
     
-    ack_packet = ACKPacket(sequence_number=0, ack_number=message.sequence_number)
+    ack_packet = ACKPacket(message.sequence_number, message.sequence_number)
     server.send_message(ack_packet, server_address)
 
     if message.packet_type == PacketType.RegisterAgentResponse:

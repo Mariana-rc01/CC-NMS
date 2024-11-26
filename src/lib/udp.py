@@ -13,8 +13,8 @@ class UDPServer:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.host, self.port))
         self.is_running = False
-        self.sequence_numbers = {} # Map client_address -> sequence_number
-        self.sent_packets = {} # Map sequence_number -> (packet, client_address)
+        self.global_sequence_number = 0  # Global sequence number
+        self.sent_packets = {}  # Map sequence_number -> (packet, client_address, event)
         self.lock = threading.Lock()
         self.retransmission_timeout = retransmission_timeout
         self.max_retries = max_retries
@@ -46,7 +46,8 @@ class UDPServer:
             received_packet = Packet.deserialize(message)
 
             if received_packet.ack_number != 0:
-                return self.process_ack(received_packet, client_address)
+                self.process_ack(received_packet)
+                return
             
             # Call the handler to process the packet
             response = self.handler(received_packet, client_address, self)
@@ -66,26 +67,54 @@ class UDPServer:
         self.socket.close()
         log("UDP Server stopped.", "INFO")
 
-    def process_ack(self, ack_packet, client_address):
+    def process_ack(self, ack_packet):
+        # Handle the reception of an ACK packet.
         with self.lock:
             if ack_packet.ack_number in self.sent_packets:
-                del self.sent_packets[ack_packet.ack_number]  # Confirms delivery
-                log(f"ACK received for sequence {ack_packet.ack_number} from {client_address}")
-                return  # ACK processed
-        return
+                _, _, ack_event = self.sent_packets.pop(ack_packet.ack_number)
+                log(f"ACK received for sequence {ack_packet.ack_number}")
+                ack_event.set()  # Signal the waiting thread
 
     def send_message(self, message, client_address):
-        if message.sequence_number is None:
-            message.sequence_number = self.get_next_sequence_number(client_address)
-
-        serialized_message = message.serialize()
-        #event = threading.Event()
-        self.socket.sendto(serialized_message, client_address)
+        # Send a message with retransmission logic.
+        if message.packet_type == PacketType.ACK or message.packet_type == PacketType.RegisterAgentResponse:
+            # No need for retransmission
+            serialized_message = message.serialize()
+            self.socket.sendto(serialized_message, client_address)
+            return True
 
         with self.lock:
-            self.sent_packets[message.sequence_number] = (message, client_address)
+            # Assign a global sequence number
+            self.global_sequence_number += 1
+            message.sequence_number = self.global_sequence_number
 
-        
-    def get_next_sequence_number(self, client_address):
-        self.sequence_numbers[client_address] = self.sequence_numbers.get(client_address, 0) + 1
-        return self.sequence_numbers[client_address]
+        serialized_message = message.serialize()
+
+        # Create an Event to wait for the ACK
+        ack_event = threading.Event()
+
+        with self.lock:
+            self.sent_packets[message.sequence_number] = (message, client_address, ack_event)
+
+        retries = 0
+        while retries < self.max_retries:
+            # Send the message
+            self.socket.sendto(serialized_message, client_address)
+            log(f"Sent message to {client_address} with sequence {message.sequence_number}, packet_type: {message.packet_type}. Attempt {retries + 1}")
+
+            # Wait for the ACK
+            if ack_event.wait(self.retransmission_timeout):
+                log(f"ACK received for sequence {message.sequence_number}, stopping retransmission.")
+                with self.lock:
+                    self.sent_packets.pop(message.sequence_number, None)  # Clean up
+                return True  # ACK received, message delivered
+
+            # Timeout, increment retry count
+            retries += 1
+            log(f"No ACK received for sequence {message.sequence_number}, retrying... ({retries}/{self.max_retries})")
+
+        # Retries exhausted, clean up
+        log(f"Failed to deliver message with sequence {message.sequence_number} after {self.max_retries} attempts.")
+        with self.lock:
+            self.sent_packets.pop(message.sequence_number, None)
+        return False

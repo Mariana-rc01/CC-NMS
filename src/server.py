@@ -29,7 +29,7 @@ def server_packet_handler(message, client_address, server):
     if message.ack_number != 0:
         log(f"ACK received for sequence {message.ack_number} from {client_address}.")
         return
-    ack_packet = ACKPacket(0, message.sequence_number)
+    ack_packet = ACKPacket(message.sequence_number, message.sequence_number)
     server.send_message(ack_packet, client_address)
 
     if message.packet_type == PacketType.RegisterAgent:
