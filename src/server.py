@@ -135,8 +135,8 @@ def main():
     alert_task_thread = threading.Thread(target=udp_server.start, daemon=True)
     alert_task_thread.start()
 
-    flask_thread = threading.Thread(target=run_flask, args=(db_path,),daemon=True)
-    flask_thread.start()
+    #flask_thread = threading.Thread(target=run_flask, args=(db_path,),daemon=True)
+    #flask_thread.start()
 
     # Wait for all required agents to be registered
     with all_agents_registered:
