@@ -18,8 +18,6 @@ from server.task_json import load_tasks_json
 from lib.logging import log
 from lib.tcp import AlertMessage, TCPServer
 
-from web.app import run_flask
-
 agent_manager = AgentManager()
 all_agents_registered = threading.Condition()
 required_agents = set()
@@ -134,9 +132,6 @@ def main():
     udp_server = UDPServer("0.0.0.0", 8080, server_packet_handler)
     alert_task_thread = threading.Thread(target=udp_server.start, daemon=True)
     alert_task_thread.start()
-
-    #flask_thread = threading.Thread(target=run_flask, args=(db_path,),daemon=True)
-    #flask_thread.start()
 
     # Wait for all required agents to be registered
     with all_agents_registered:

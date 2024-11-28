@@ -81,3 +81,6 @@ def run_flask(database_path):
     global DB_PATH
     DB_PATH = database_path
     app.run(host="0.0.0.0", port=5000)
+
+if __name__ == "__main__":
+    run_flask("teste.db")

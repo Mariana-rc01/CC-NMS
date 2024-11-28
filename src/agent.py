@@ -165,7 +165,7 @@ def main():
     server_ip = sys.argv[1]
     agent_id = sys.argv[2]
     
-    tcp_client = TCPClient("0.0.0.0", server_port=9090)
+    tcp_client = TCPClient(server_ip, server_port=9090)
 
     udp_server = UDPServer("0.0.0.0", 0, lambda msg, addr, srv: agent_packet_handler(msg, addr, srv, tcp_client))
     net_task_thread = threading.Thread(target=udp_server.start, daemon=True)
