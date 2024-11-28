@@ -1,4 +1,5 @@
 from enum import Enum
+import hashlib
 from queue import Full
 from lib.task_serializer import TaskSerializer
 from lib.task import Task
@@ -9,8 +10,19 @@ class PacketType(Enum):
     RegisterAgentResponse = 1
     Task = 2
     Metrics = 3
+    ACK = 4
 
 class Packet():
+    def __init__(self, sequence_number = None, ack_number = None):
+        self.sequence_number = sequence_number
+        self.ack_number = ack_number
+
+    def calculate_checksum(data):
+        return hashlib.sha256(data).hexdigest()
+    
+    def validate_checksum(data, checksum):
+        return checksum == Packet.calculate_checksum(data)
+
     @staticmethod
     def deserialize(data):
         packet_type_value = data[0]
@@ -24,11 +36,15 @@ class Packet():
             return TaskPacket.deserialize(data)
         elif packet_type == PacketType.Metrics:
             return MetricsPacket.deserialize(data)
+        elif packet_type == PacketType.ACK:
+            return ACKPacket.deserialize(data)
         else:
             raise ValueError("Unknown packet type.")
 
 class RegisterAgentPacket():
-    def __init__(self, agent_id):
+    def __init__(self, agent_id, sequence_number = None, ack_number = None):
+        self.sequence_number = sequence_number
+        self.ack_number = ack_number
         self.packet_type = PacketType.RegisterAgent
         self.agent_id = agent_id
 
@@ -39,12 +55,16 @@ class RegisterAgentPacket():
     def serialize(self):
         packet_bytes = b''
         packet_bytes += self.packet_type.value.to_bytes(1, byteorder='big')
+        packet_bytes += (self.sequence_number or 0).to_bytes(1, byteorder='big')
+        packet_bytes += (self.ack_number or 0).to_bytes(1, byteorder='big')
         packet_bytes += self.agent_id.ljust(5).encode('utf-8')
         return packet_bytes
 
     def deserialize(data):
-        agent_id = data[1:6].decode('utf-8').strip()
-        return RegisterAgentPacket(agent_id)
+        sequence_number = data[1]
+        ack_number = data[2]
+        agent_id = data[3:8].decode('utf-8').strip()
+        return RegisterAgentPacket(agent_id, sequence_number, ack_number)
 
 class AgentRegistrationStatus(Enum):
     Success = 0
@@ -52,7 +72,9 @@ class AgentRegistrationStatus(Enum):
     InvalidID = 2
 
 class RegisterAgentPacketResponse():
-    def __init__(self, agent_registration_status):
+    def __init__(self, agent_registration_status, sequence_number=None, ack_number=None):
+        self.sequence_number = sequence_number
+        self.ack_number = ack_number
         self.packet_type = PacketType.RegisterAgentResponse
         self.agent_registration_status = agent_registration_status
 
@@ -63,15 +85,21 @@ class RegisterAgentPacketResponse():
     def serialize(self):
         packet_bytes = b''
         packet_bytes += self.packet_type.value.to_bytes(1, byteorder='big')
+        packet_bytes += (self.sequence_number or 0).to_bytes(1, byteorder='big')
+        packet_bytes += (self.ack_number or 0).to_bytes(1, byteorder='big')
         packet_bytes += self.agent_registration_status.value.to_bytes(1, byteorder='big')
         return packet_bytes
 
     def deserialize(data):
-        agent_registration_status = AgentRegistrationStatus(data[1])
-        return RegisterAgentPacketResponse(agent_registration_status)
+        sequence_number = data[1]
+        ack_number = data[2]
+        agent_registration_status = AgentRegistrationStatus(data[3])
+        return RegisterAgentPacketResponse(agent_registration_status, sequence_number, ack_number)
     
 class TaskPacket:
-    def __init__(self, tasks):
+    def __init__(self, tasks, sequence_number, ack_number):
+        self.sequence_number = sequence_number
+        self.ack_number = ack_number
         self.packet_type = PacketType.Task
         self.tasks = tasks
 
@@ -82,6 +110,8 @@ class TaskPacket:
     def serialize(self):
         packet_bytes = b''
         packet_bytes += self.packet_type.value.to_bytes(1, byteorder='big')
+        packet_bytes += self.sequence_number.to_bytes(1, byteorder='big')
+        packet_bytes += (self.ack_number or 0).to_bytes(1, byteorder='big')
 
         # Serialize number of tasks
         packet_bytes += len(self.tasks).to_bytes(1, byteorder='big')
@@ -90,24 +120,36 @@ class TaskPacket:
         for task in self.tasks:
             packet_bytes += TaskSerializer.serialize(task)
 
+        checksum = Packet.calculate_checksum(packet_bytes)
+        packet_bytes += checksum.encode('utf-8')
+
         return packet_bytes
     
     def deserialize(data):
+        sequence_number = data[1]
+        ack_number = data[2]
         tasks = []
 
         # Deserialize number of tasks
-        num_tasks = data[1]
+        num_tasks = data[3]
 
         # Deserialize each task
-        offset = 2
+        offset = 4
         for i in range(num_tasks):
             task, offset = TaskSerializer.deserialize(data, offset)
             tasks.append(task)
 
-        return TaskPacket(tasks)
+        # Validate checksum
+        checksum = data[offset:].decode('utf-8')
+        if not Packet.validate_checksum(data[:offset], checksum):
+            raise ValueError("Invalid checksum for TaskPacket")
+
+        return TaskPacket(tasks, sequence_number, ack_number)
 
 class MetricsPacket:
-    def __init__(self, task_id, device_id, bandwidth=None, jitter=None, loss=None, latency=None, timestamp=None):
+    def __init__(self, task_id, device_id, bandwidth=None, jitter=None, loss=None, latency=None, timestamp=None, sequence_number=None, ack_number=None):
+        self.sequence_number = sequence_number
+        self.ack_number = ack_number
         self.packet_type = PacketType.Metrics
         self.task_id = task_id
         self.device_id = device_id
@@ -124,6 +166,8 @@ class MetricsPacket:
     def serialize(self):
         packet_bytes = b''
         packet_bytes += self.packet_type.value.to_bytes(1, byteorder='big')
+        packet_bytes += (self.sequence_number or 0).to_bytes(1, byteorder='big')
+        packet_bytes += (self.ack_number or 0).to_bytes(1, byteorder='big')
         packet_bytes += self.task_id.ljust(10).encode('utf-8')
         packet_bytes += self.device_id.ljust(5).encode('utf-8')
 
@@ -133,23 +177,29 @@ class MetricsPacket:
         packet_bytes += struct.pack('f', self.latency if self.latency is not None else float('nan'))
         packet_bytes += struct.pack('f', self.timestamp)
 
+        checksum = Packet.calculate_checksum(packet_bytes)
+        packet_bytes += checksum.encode('utf-8')
+
         return packet_bytes
 
     def deserialize(data):
         packet_type = PacketType(data[0])
         if packet_type != PacketType.Metrics:
             raise ValueError("Invalid packet type for MetricsPacket.")
+        
+        sequence_number = data[1]
+        ack_number = data[2]
 
         # Deserialize Task ID and Device ID
-        task_id = data[1:11].decode('utf-8').strip()
-        device_id = data[11:16].decode('utf-8').strip()
+        task_id = data[3:13].decode('utf-8').strip()
+        device_id = data[13:18].decode('utf-8').strip()
 
         # Deserialize metrics as floats (convert NaN to None)
-        bandwidth = struct.unpack('f', data[16:20])[0]
-        jitter = struct.unpack('f', data[20:24])[0]
-        loss = struct.unpack('f', data[24:28])[0]
-        latency = struct.unpack('f', data[28:32])[0]
-        timestamp = struct.unpack('f', data[32:36])[0]
+        bandwidth = struct.unpack('f', data[18:22])[0]
+        jitter = struct.unpack('f', data[22:26])[0]
+        loss = struct.unpack('f', data[26:30])[0]
+        latency = struct.unpack('f', data[30:34])[0]
+        timestamp = struct.unpack('f', data[34:38])[0]
 
         # Replace NaN values with None
         bandwidth = None if bandwidth != bandwidth else bandwidth  # Check for NaN
@@ -157,4 +207,27 @@ class MetricsPacket:
         loss = None if loss != loss else loss
         latency = None if latency != latency else latency
 
-        return MetricsPacket(task_id, device_id, bandwidth, jitter, loss, latency, timestamp)
+        checksum = data[38:].decode('utf-8')
+        if not Packet.validate_checksum(data[:38], checksum):
+            raise ValueError("Invalid checksum for MetricsPacket")
+
+        return MetricsPacket(task_id, device_id, bandwidth, jitter, loss, latency, timestamp, sequence_number, ack_number)
+    
+class ACKPacket():
+    def __init__(self, sequence_number, ack_number):
+        self.packet_type = PacketType.ACK
+        self.sequence_number = sequence_number
+        self.ack_number = ack_number
+
+    def serialize(self):
+        packet_bytes = b''
+        packet_bytes += self.packet_type.value.to_bytes(1, byteorder='big')
+        packet_bytes += (self.sequence_number or 0).to_bytes(1, byteorder='big')
+        packet_bytes += (self.ack_number or 0).to_bytes(1, byteorder='big')
+        return packet_bytes
+    
+    @staticmethod
+    def deserialize(data):
+        sequence_number = data[1]
+        ack_number = data[2]
+        return ACKPacket(sequence_number, ack_number)

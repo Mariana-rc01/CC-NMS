@@ -19,9 +19,22 @@ def setup_database(path):
             timestamp DATETIME NOT NULL
         )
     ''')
+
+    # Create the table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS alertflow (
+            alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id TEXT NOT NULL,
+            device_id TEXT NOT NULL,
+            alert_type TEXT NOT NULL,
+            details TEXT NOT NULL,
+            timestamp DATETIME NOT NULL
+        )
+    ''')
+
     connection.commit()
 
-    log("Metrics database started successfully.")
+    log("Metrics and AlertFlow database started successfully.")
     connection.close()
 
 def insert_metrics(path, task_id, device_id, bandwidth, jitter, loss, latency, timestamp):
@@ -41,6 +54,18 @@ def insert_metrics(path, task_id, device_id, bandwidth, jitter, loss, latency, t
         INSERT INTO packets (task_id, device_id, bandwidth, jitter, loss, latency, timestamp)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (task_id, device_id, bandwidth, jitter, loss, latency, timestamp))
+
+    connection.commit()
+    connection.close()
+
+def insert_alert(path, task_id, device_id, alert_type, details, timestamp):
+    connection = sqlite3.connect(path)
+    cursor = connection.cursor()
+
+    cursor.execute('''
+        INSERT INTO alertflow (task_id, device_id, alert_type, details, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (task_id, device_id, alert_type, details, timestamp))
 
     connection.commit()
     connection.close()

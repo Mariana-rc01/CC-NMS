@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NMS Dashboard{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #003F88;
+            color: white;
+            padding: 1em 0;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+        }
+        nav {
+            background-color: #FFCAD4;
+            padding: 1em;
+            text-align: center;
+        }
+        nav a {
+            text-decoration: none;
+            margin: 0 1em;
+            padding: 0.5em 1em;
+            color: white;
+            border-radius: 5px;
+        }
+        nav a:hover {
+            background-color: #F49CBB;
+        }
+        footer {
+            margin-top: 2em;
+            color: #5FA8D3;
+            text-align: center;
+        }
+        .container {
+            padding: 2em;
+            max-width: 1200px;
+            margin: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 0.75em;
+            text-align: left;
+        }
+        th {
+            background-color: #CDB4DB;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>NMS Dashboard</h1>
+    </header>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/metrics">Metrics</a>
+        <a href="/alerts">Alerts</a>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <footer>
+        <p>Computer Communication Project</p>
+        <p>Developed by João Lobo, Mariana Rocha, and Rita Camacho</p>
+        <p>2024/2025</p>
+    </footer>
+</body>
+</html>

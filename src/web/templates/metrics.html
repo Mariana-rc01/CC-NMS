@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Metrics - NMS Dashboard{% endblock %}
+
+{% block content %}
+    <h2>Metrics</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Task ID</th>
+                <th>Device ID</th>
+                <th>Bandwidth (Mbps)</th>
+                <th>Jitter (ms)</th>
+                <th>Packet Loss (%)</th>
+                <th>Latency (ms)</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for metric in metrics %}
+                <tr>
+                    <td>{{ metric["task_id"] }}</td>
+                    <td>{{ metric["device_id"] }}</td>
+                    <td>{{ metric["bandwidth"] or "N/A" }}</td>
+                    <td>{{ metric["jitter"] or "N/A" }}</td>
+                    <td>{{ metric["loss"] or "N/A" }}</td>
+                    <td>{{ metric["latency"] or "N/A" }}</td>
+                    <td>{{ metric["timestamp"] }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
