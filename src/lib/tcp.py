@@ -90,6 +90,7 @@ class TCPClient:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.server_ip, self.server_port))
                 s.sendall(alert_message.serialize())
+                log("Alert sent.")
         except Exception as e:
             log(f"Error sending alert: {e}.")
 
@@ -111,7 +112,6 @@ class TCPServer:
         while True:
             try:
                 client_socket, client_address = self.socket.accept()
-                log(f"Connection established with {client_address}.")
                 threading.Thread(
                     target=self.handle_client,
                     args=(client_socket, client_address),

@@ -11,6 +11,7 @@ class PacketType(Enum):
     Task = 2
     Metrics = 3
     ACK = 4
+    FlowControl = 5
 
 class Packet():
     def __init__(self, sequence_number = None, ack_number = None):
@@ -38,6 +39,8 @@ class Packet():
             return MetricsPacket.deserialize(data)
         elif packet_type == PacketType.ACK:
             return ACKPacket.deserialize(data)
+        elif packet_type == PacketType.FlowControl:
+            return FlowControlPacket.deserialize(data)
         else:
             raise ValueError("Unknown packet type.")
 
@@ -145,6 +148,12 @@ class TaskPacket:
             raise ValueError("Invalid checksum for TaskPacket")
 
         return TaskPacket(tasks, sequence_number, ack_number)
+    
+    def __lt__(self, other):
+        return self.sequence_number < other.sequence_number
+
+    def __eq__(self, other):
+        return self.sequence_number == other.sequence_number
 
 class MetricsPacket:
     def __init__(self, task_id, device_id, bandwidth=None, jitter=None, loss=None, latency=None, timestamp=None, sequence_number=None, ack_number=None):
@@ -213,6 +222,12 @@ class MetricsPacket:
 
         return MetricsPacket(task_id, device_id, bandwidth, jitter, loss, latency, timestamp, sequence_number, ack_number)
     
+    def __lt__(self, other):
+        return self.sequence_number < other.sequence_number
+
+    def __eq__(self, other):
+        return self.sequence_number == other.sequence_number
+    
 class ACKPacket():
     def __init__(self, sequence_number, ack_number):
         self.packet_type = PacketType.ACK
@@ -231,3 +246,25 @@ class ACKPacket():
         sequence_number = data[1]
         ack_number = data[2]
         return ACKPacket(sequence_number, ack_number)
+    
+class FlowControlPacket():
+    def __init__(self, sequence_number=None, ack_number=None, can_send=None):
+        self.sequence_number = sequence_number
+        self.ack_number = ack_number
+        self.packet_type = PacketType.FlowControl
+        self.can_send = can_send  # True se pode enviar, False caso contrário
+
+    def serialize(self):
+        packet_bytes = b''
+        packet_bytes += self.packet_type.value.to_bytes(1, byteorder='big')
+        packet_bytes += (self.sequence_number or 0).to_bytes(1, byteorder='big')
+        packet_bytes += (self.ack_number or 0).to_bytes(1, byteorder='big')
+        packet_bytes += (1 if self.can_send else 0).to_bytes(1, byteorder='big')  # 1 byte para can_send
+        return packet_bytes
+
+    @staticmethod
+    def deserialize(data):
+        sequence_number = data[1]
+        ack_number = data[2]
+        can_send = True if data[3] == 1 else False
+        return FlowControlPacket(sequence_number, ack_number, can_send)

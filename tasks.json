@@ -8,7 +8,7 @@
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
-                    "interface_stats": ["eth0", "eth1"]
+                    "interface_stats": ["eth0"]
                 },
                 "link_metrics": {
                     "jitter": {
@@ -49,7 +49,7 @@
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
-                    "interface_stats": ["eth0", "eth1"]
+                    "interface_stats": ["eth0"]
                 },
                 "link_metrics": {
                     "jitter": {
@@ -96,7 +96,7 @@
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
-                    "interface_stats": ["eth0", "eth1"]
+                    "interface_stats": ["eth0"]
                 },
                 "link_metrics": {
                     "latency": {

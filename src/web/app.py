@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 import sqlite3
+import sys
 
 app = Flask(__name__)
 DB_PATH = None
@@ -77,7 +78,16 @@ def alerts():
     data = query_db(query, params)
     return render_template("alerts.html", alerts=data)
 
-def run_flask(database_path):
+def run_flask():
     global DB_PATH
-    DB_PATH = database_path
+
+    if len(sys.argv) < 2:
+        print("Usage: python app.py <path_to_database>")
+        sys.exit(1)
+
+    DB_PATH = sys.argv[1]
+    print(f"Using database at: {DB_PATH}")
     app.run(host="0.0.0.0", port=5000)
+
+if __name__ == "__main__":
+    run_flask()
