@@ -80,6 +80,14 @@ class UDPServer:
             self.flow_condition.notify_all()
 
     def send_message(self, message, client_address):
+        with self.lock:
+            client_data = self.client_queues.get(client_address)
+            if client_data and not client_data["can_send"]:
+                log(f"Waiting for flow control to allow sending to {client_address}.")
+                # Wait for the flow condition to be notified
+                with self.flow_condition:
+                    self.flow_condition.wait_for(lambda: client_data["can_send"])
+
         # Send a message with retransmission logic.
         if message.packet_type == PacketType.ACK or message.packet_type == PacketType.RegisterAgentResponse:
             # No need for retransmission
@@ -102,7 +110,7 @@ class UDPServer:
                     "queue": queue.PriorityQueue(),
                     "packets": {},
                     "expected_sequence_number": 1,
-                    "can_send": True
+                    "can_send": True  # Initially, the server allows sending
                 }
                 log(f"Created queue for client {client_address}")
 
@@ -116,6 +124,12 @@ class UDPServer:
                     self.global_sequence_number += 1
                 self.send_message(FlowControlPacket(self.global_sequence_number,can_send=False), client_address)
                 client_data["can_send"] = False
+
+            elif queue_size < self.flow_control and not client_data["can_send"]:
+                # If queue size is below flow control and can_send is False, resume sending
+                log(f"Resuming flow for {client_address}. Sending FlowControlPacket(can_send=True).")
+                client_data["can_send"] = True
+                self.send_message(FlowControlPacket(self.global_sequence_number, can_send=True), client_address)
 
             log(f"Adding packet {packet.sequence_number} to queue for {client_address}")
             client_data["queue"].put(packet.sequence_number)
