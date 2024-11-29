@@ -1,6 +1,6 @@
 import socket
 import threading
-
+import queue
 from lib.packets import ACKPacket, Packet, PacketType
 from lib.logging import log
 
@@ -15,12 +15,12 @@ class UDPServer:
         self.is_running = False
         self.global_sequence_number = 0  # Global sequence number
         self.sent_packets = {}  # Map sequence_number -> (packet, client_address, event)
+        self.client_queues = {}  # Map client_address -> {queue, expected_sequence_number}
         self.lock = threading.Lock()
         self.retransmission_timeout = retransmission_timeout
         self.max_retries = max_retries
         self.flow_control = flow_control
         self.flow_condition = threading.Condition()
-
 
     def start(self):
         self.is_running = True
@@ -51,14 +51,12 @@ class UDPServer:
             if received_packet.ack_number != 0:
                 self.process_ack(received_packet)
                 return
-            
-            # Call the handler to process the packet
-            response = self.handler(received_packet, client_address, self)
-            
-            # If a response is provided, serialize and send it back to the client
-            if response:
-                response.ack_number = received_packet.sequence_number
-                self.send_message(response, client_address)
+
+            # Add the packet to the clients queue
+            self.add_to_client_queue(received_packet, client_address)
+
+            # Process all client queues
+            self.process_all_client_queues()
         except ValueError as e:
             log(f"Packet checksum mismatch: {e}", "ERROR")
             self.send_message(ACKPacket(received_packet.sequence_number, None), client_address)
@@ -135,3 +133,38 @@ class UDPServer:
         with self.flow_condition:
             self.flow_condition.notify_all()
         return False
+
+    def add_to_client_queue(self, packet, client_address):
+        with self.lock:
+            if client_address not in self.client_queues:
+                self.client_queues[client_address] = {
+                    "queue": queue.PriorityQueue(),
+                    "packets": {},
+                    "expected_sequence_number": 1
+                }
+                log(f"Created queue for client {client_address}")
+
+            client_data = self.client_queues[client_address]
+            log(f"Adding packet {packet.sequence_number} to queue for {client_address}")
+            client_data["queue"].put(packet.sequence_number)
+            client_data["packets"][packet.sequence_number] = packet
+
+    def process_all_client_queues(self):
+        with self.lock:
+            for client_address, client_data in self.client_queues.items():
+                self.process_client_queue(client_address, client_data)
+
+    def process_client_queue(self, client_address, client_data):
+        while not client_data["queue"].empty():
+            seq_num = client_data["queue"].queue[0]
+            log(f"Processing packet {seq_num} for client {client_address}")
+
+            client_data["queue"].get()
+            packet = client_data["packets"].pop(seq_num)
+
+            threading.Thread(
+                target=self.handler,
+                args=(packet, client_address, self),
+                daemon=True
+            ).start()
+            client_data["expected_sequence_number"] += 1

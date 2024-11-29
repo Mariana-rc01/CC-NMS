@@ -145,6 +145,12 @@ class TaskPacket:
             raise ValueError("Invalid checksum for TaskPacket")
 
         return TaskPacket(tasks, sequence_number, ack_number)
+    
+    def __lt__(self, other):
+        return self.sequence_number < other.sequence_number
+
+    def __eq__(self, other):
+        return self.sequence_number == other.sequence_number
 
 class MetricsPacket:
     def __init__(self, task_id, device_id, bandwidth=None, jitter=None, loss=None, latency=None, timestamp=None, sequence_number=None, ack_number=None):
@@ -212,6 +218,12 @@ class MetricsPacket:
             raise ValueError("Invalid checksum for MetricsPacket")
 
         return MetricsPacket(task_id, device_id, bandwidth, jitter, loss, latency, timestamp, sequence_number, ack_number)
+    
+    def __lt__(self, other):
+        return self.sequence_number < other.sequence_number
+
+    def __eq__(self, other):
+        return self.sequence_number == other.sequence_number
     
 class ACKPacket():
     def __init__(self, sequence_number, ack_number):
