@@ -1,7 +1,7 @@
 import socket
 import threading
 import queue
-from lib.packets import ACKPacket, Packet, PacketType
+from lib.packets import ACKPacket, Packet, PacketType, FlowControlPacket
 from lib.logging import log
 
 
@@ -15,7 +15,7 @@ class UDPServer:
         self.is_running = False
         self.global_sequence_number = 0  # Global sequence number
         self.sent_packets = {}  # Map sequence_number -> (packet, client_address, event)
-        self.client_queues = {}  # Map client_address -> {queue, expected_sequence_number}
+        self.client_queues = {}  # Map client_address -> {queue, expected_sequence_number, flow_state}
         self.lock = threading.Lock()
         self.retransmission_timeout = retransmission_timeout
         self.max_retries = max_retries
@@ -80,11 +80,6 @@ class UDPServer:
             self.flow_condition.notify_all()
 
     def send_message(self, message, client_address):
-        with self.flow_condition:
-            while len(self.sent_packets) >= self.flow_control:
-                log(f"Flow control limit reached. Waiting for packets to be acknowledged.")
-                self.flow_condition.wait()
-
         # Send a message with retransmission logic.
         if message.packet_type == PacketType.ACK or message.packet_type == PacketType.RegisterAgentResponse:
             # No need for retransmission
@@ -98,41 +93,7 @@ class UDPServer:
             message.sequence_number = self.global_sequence_number
 
         serialized_message = message.serialize()
-
-        # Create an Event to wait for the ACK
-        ack_event = threading.Event()
-
-        with self.lock:
-            self.sent_packets[message.sequence_number] = (message, client_address, ack_event)
-
-        retries = 0
-        while retries < self.max_retries:
-            # Send the message
-            self.socket.sendto(serialized_message, client_address)
-            log(f"Sent message to {client_address} with sequence {message.sequence_number}, packet_type: {message.packet_type}. Attempt {retries + 1}")
-
-            # Wait for the ACK
-            if ack_event.wait(self.retransmission_timeout):
-                log(f"ACK received for sequence {message.sequence_number}, stopping retransmission.")
-                with self.lock:
-                    self.sent_packets.pop(message.sequence_number, None)  # Clean up
-
-                with self.flow_condition:
-                    self.flow_condition.notify_all()
-                return True  # ACK received, message delivered
-
-            # Timeout, increment retry count
-            retries += 1
-            log(f"No ACK received for sequence {message.sequence_number}, retrying... ({retries}/{self.max_retries})")
-
-        # Retries exhausted, clean up
-        log(f"Failed to deliver message with sequence {message.sequence_number} after {self.max_retries} attempts.")
-        with self.lock:
-            self.sent_packets.pop(message.sequence_number, None)
-
-        with self.flow_condition:
-            self.flow_condition.notify_all()
-        return False
+        self.socket.sendto(serialized_message, client_address)
 
     def add_to_client_queue(self, packet, client_address):
         with self.lock:
@@ -140,11 +101,22 @@ class UDPServer:
                 self.client_queues[client_address] = {
                     "queue": queue.PriorityQueue(),
                     "packets": {},
-                    "expected_sequence_number": 1
+                    "expected_sequence_number": 1,
+                    "can_send": True
                 }
                 log(f"Created queue for client {client_address}")
 
             client_data = self.client_queues[client_address]
+            queue_size = client_data["queue"].qsize()
+
+            # Enforce flow control
+            if queue_size >= self.flow_control and client_data["can_send"]:
+                log(f"Flow control triggered for {client_address}. Sending FlowControlPacket(can_send=False).")
+                with self.lock:
+                    self.global_sequence_number += 1
+                self.send_message(FlowControlPacket(self.global_sequence_number,can_send=False), client_address)
+                client_data["can_send"] = False
+
             log(f"Adding packet {packet.sequence_number} to queue for {client_address}")
             client_data["queue"].put(packet.sequence_number)
             client_data["packets"][packet.sequence_number] = packet
@@ -168,3 +140,11 @@ class UDPServer:
                 daemon=True
             ).start()
             client_data["expected_sequence_number"] += 1
+
+        # If the queue size is below the flow control limit and flow was paused, resume flow
+        if client_data["queue"].qsize() < self.flow_control and not client_data["can_send"]:
+            log(f"Resuming flow for {client_address}. Sending FlowControlPacket(can_send=True).")
+            with self.lock:
+                self.global_sequence_number += 1
+            self.send_message(FlowControlPacket(self.global_sequence_number, can_send=True), client_address)
+            client_data["can_send"] = True
