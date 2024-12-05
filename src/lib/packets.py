@@ -184,7 +184,7 @@ class MetricsPacket:
         packet_bytes += struct.pack('f', self.jitter if self.jitter is not None else float('nan'))
         packet_bytes += struct.pack('f', self.loss if self.loss is not None else float('nan'))
         packet_bytes += struct.pack('f', self.latency if self.latency is not None else float('nan'))
-        packet_bytes += struct.pack('f', self.timestamp)
+        packet_bytes += (self.timestamp or 0).to_bytes(4, byteorder='big')
 
         checksum = Packet.calculate_checksum(packet_bytes)
         packet_bytes += checksum.encode('utf-8')
@@ -208,7 +208,7 @@ class MetricsPacket:
         jitter = struct.unpack('f', data[22:26])[0]
         loss = struct.unpack('f', data[26:30])[0]
         latency = struct.unpack('f', data[30:34])[0]
-        timestamp = struct.unpack('f', data[34:38])[0]
+        timestamp = int.from_bytes(data[34:38], byteorder='big')
 
         # Replace NaN values with None
         bandwidth = None if bandwidth != bandwidth else bandwidth  # Check for NaN

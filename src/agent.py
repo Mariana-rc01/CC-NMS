@@ -60,7 +60,7 @@ def task_runner(task, server_address, udp_server, tcp_client):
     resultConditions.set_interface_stats(calculate_interface_stats(interface_stats))
 
     # Send the results back to the server
-    packet = MetricsPacket(task.id, agent_id, result.bandwidth, result.jitter, result.packet_loss, result.latency, time.time())
+    packet = MetricsPacket(task.id, agent_id, result.bandwidth, result.jitter, result.packet_loss, result.latency, int(time.time()))
     udp_server.send_message(packet, server_address)
 
     alerts = check_critical_changes(resultConditions, alterflow_conditions)
