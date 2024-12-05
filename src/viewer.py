@@ -1,7 +1,7 @@
 import sys
 import sqlite3
-#from tabulate import tabulate
 import matplotlib.pyplot as plt
+from collections import Counter
 
 metrics_units = {
     "bandwidth": "Mbps",
@@ -22,49 +22,94 @@ def main():
         database_connection = sqlite3.connect(database_path)
         cursor = database_connection.cursor()
 
-        # Fetch data from the packets table
-        print("Select task:")
-        cursor.execute("SELECT DISTINCT task_id FROM packets")
-        tasks = cursor.fetchall()
-        for task in tasks:
-            print(task[0])
-        
-        task_id = input("|> ")
+        # Main menu
+        print("Select what you want to view:")
+        print("1. Metrics")
+        print("2. Alerts")
+        choice = input("|> ")
 
-        print("Select device:")
-        cursor.execute("SELECT DISTINCT device_id FROM packets WHERE task_id=?", (task_id,))
-        devices = cursor.fetchall()
-        for device in devices:
-            print(device[0])
-        
-        device_id = input("|> ")
-
-        print("Select metric:")
-        cursor.execute("SELECT * FROM packets WHERE task_id=? AND device_id=?", (task_id, device_id))
-        data = cursor.fetchall()
-
-        column_names = [description[0] for description in cursor.description]
-        for column in column_names:
-            print(column)
-
-        metric = input("|> ")
-
-        cursor.execute("SELECT timestamp, " + metric + " FROM packets WHERE task_id=? AND device_id=?", (task_id, device_id))
-        data = cursor.fetchall()
-
-        if data:
-            # Pretty print the data in a tabular format
-            # print(tabulate(data, headers=["timestamp", metric], tablefmt="grid"))
+        if choice == "1":
+            # Fetch data from the packets table (Metrics)
+            print("Select task:")
+            cursor.execute("SELECT DISTINCT task_id FROM packets")
+            tasks = cursor.fetchall()
+            for task in tasks:
+                print(task[0])
             
-            # Plot data
-            x = [row[0] for row in data]
-            y = [row[1] for row in data]
-            plt.plot(x, y)
-            plt.xlabel("Timestamp")
-            plt.ylabel(f"{metric.capitalize() + ' (' + metrics_units[metric] + ')'}")
-            plt.title(f"{metric.capitalize()} for {task_id} and device {device_id}")
-            plt.show()
-        
+            task_id = input("|> ")
+
+            print("Select device:")
+            cursor.execute("SELECT DISTINCT device_id FROM packets WHERE task_id=?", (task_id,))
+            devices = cursor.fetchall()
+            for device in devices:
+                print(device[0])
+            
+            device_id = input("|> ")
+
+            print("Select metric:")
+            cursor.execute("SELECT * FROM packets WHERE task_id=? AND device_id=?", (task_id, device_id))
+            data = cursor.fetchall()
+
+            column_names = [description[0] for description in cursor.description]
+            for column in column_names:
+                print(column)
+
+            metric = input("|> ")
+
+            cursor.execute("SELECT timestamp, " + metric + " FROM packets WHERE task_id=? AND device_id=?", (task_id, device_id))
+            data = cursor.fetchall()
+
+            if data:
+                # Plot data
+                x = [row[0] for row in data]
+                y = [row[1] for row in data]
+                plt.plot(x, y)
+                plt.xlabel("Timestamp")
+                plt.ylabel(f"{metric.capitalize() + ' (' + metrics_units[metric] + ')'}")
+                plt.title(f"{metric.capitalize()} for {task_id} and device {device_id}")
+                plt.show()
+
+        elif choice == "2":
+            # Fetch data from the alertflow table (Alerts)
+            print("Select task:")
+            cursor.execute("SELECT DISTINCT task_id FROM alertflow")
+            tasks = cursor.fetchall()
+            for task in tasks:
+                print(task[0])
+            
+            task_id = input("|> ")
+
+            print("Select device:")
+            cursor.execute("SELECT DISTINCT device_id FROM alertflow WHERE task_id=?", (task_id,))
+            devices = cursor.fetchall()
+            for device in devices:
+                print(device[0])
+            
+            device_id = input("|> ")
+
+            print("Fetching alerts for the selected task and device...")
+            cursor.execute("SELECT alert_type FROM alertflow WHERE task_id=? AND device_id=?", (task_id, device_id))
+            alerts = cursor.fetchall()
+
+            if alerts:
+                # Count the occurrences of each alert type
+                alert_counts = Counter(alert[0] for alert in alerts)
+
+                # Prepare data for plotting
+                alert_types = list(alert_counts.keys())
+                alert_occurrences = list(alert_counts.values())
+
+                # Plot data as a bar chart
+                plt.bar(alert_types, alert_occurrences, color='pink')
+                plt.xlabel("Alert Type")
+                plt.ylabel("Number of Occurrences")
+                plt.title(f"Alert Types for Task {task_id} and Device {device_id}")
+                plt.show()
+            else:
+                print("No alerts found for the selected task and device.")
+
+        else:
+            print("Invalid choice. Please select 1 or 2.")
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")

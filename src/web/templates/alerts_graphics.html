@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Alerts Graphics{% endblock %}
+{% block content %}
+<h2>Alerts Graphics</h2>
+<form id="alerts-form">
+    <label for="task_id">Select Task:</label>
+    <select name="task_id" id="task_id">
+        {% for task in tasks %}
+        <option value="{{ task['task_id'] }}">{{ task['task_id'] }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="device_id">Device ID:</label>
+    <input type="text" name="device_id" id="device_id">
+
+    <button type="submit">Generate Graph</button>
+</form>
+<div id="graph-container"></div>
+<script>
+    document.getElementById("alerts-form").onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        fetch("/generate_alerts_graph", {
+            method: "POST",
+            body: formData
+        }).then(response => response.json())
+          .then(data => {
+              if (data.error) {
+                  alert(data.error);
+              } else {
+                  document.getElementById("graph-container").innerHTML = `<img src="data:image/png;base64,${data.image}" alt="Alerts Graph"/>`;
+              }
+          });
+    };
+</script>
+{% endblock %}
