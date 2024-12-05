@@ -89,7 +89,7 @@ class UDPServer:
                     self.flow_condition.wait_for(lambda: client_data["can_send"])
 
         # Send a message with retransmission logic.
-        if message.packet_type == PacketType.ACK or message.packet_type == PacketType.RegisterAgentResponse:
+        if message.packet_type == PacketType.ACK:
             # No need for retransmission
             serialized_message = message.serialize()
             self.socket.sendto(serialized_message, client_address)
@@ -101,7 +101,33 @@ class UDPServer:
             message.sequence_number = self.global_sequence_number
 
         serialized_message = message.serialize()
-        self.socket.sendto(serialized_message, client_address)
+         # Create an Event to wait for the ACK
+        ack_event = threading.Event()
+        with self.lock:
+            self.sent_packets[message.sequence_number] = (message, client_address, ack_event)
+        retries = 0
+        while retries < self.max_retries:
+            # Send the message
+            self.socket.sendto(serialized_message, client_address)
+            log(f"Sent message to {client_address} with sequence {message.sequence_number}, packet_type: {message.packet_type}. Attempt {retries + 1}")
+            # Wait for the ACK
+            if ack_event.wait(self.retransmission_timeout):
+                log(f"ACK received for sequence {message.sequence_number}, stopping retransmission.")
+                with self.lock:
+                    self.sent_packets.pop(message.sequence_number, None)  # Clean up
+                with self.flow_condition:
+                    self.flow_condition.notify_all()
+                return True  # ACK received, message delivered
+            # Timeout, increment retry count
+            retries += 1
+            log(f"No ACK received for sequence {message.sequence_number}, retrying... ({retries}/{self.max_retries})")
+        # Retries exhausted, clean up
+        log(f"Failed to deliver message with sequence {message.sequence_number} after {self.max_retries} attempts.")
+        with self.lock:
+            self.sent_packets.pop(message.sequence_number, None)
+        with self.flow_condition:
+            self.flow_condition.notify_all()
+        return False
 
     def add_to_client_queue(self, packet, client_address):
         with self.lock:

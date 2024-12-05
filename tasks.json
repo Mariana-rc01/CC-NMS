@@ -4,7 +4,7 @@
         "frequency": 10,
         "devices": [
             {
-                "device_id": "1",
+                "device_id": "PC1",
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
@@ -31,7 +31,7 @@
                         "tool": "iperf",
                         "is_server": false,
                         "duration": 2,
-                        "server_address": "10.0.2.1",
+                        "server_address": "10.0.5.1",
                         "transport": "udp",
                         "frequency": 60
                     },
@@ -45,7 +45,7 @@
                 }
             },
             {
-                "device_id": "2",
+                "device_id": "PC3",
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
@@ -55,7 +55,7 @@
                     "jitter": {
                         "tool": "iperf",
                         "is_server": false,
-                        "server_address": "10.0.2.1",
+                        "server_address": "10.0.5.1",
                         "duration": 2,
                         "transport": "udp",
                         "frequency": 60
@@ -63,7 +63,7 @@
                     "bandwidth": {
                         "tool": "iperf",
                         "is_server": false,
-                        "server_address": "10.0.2.1",
+                        "server_address": "10.0.5.1",
                         "duration": 2,
                         "transport": "udp",
                         "frequency": 60
@@ -72,16 +72,16 @@
                         "tool": "iperf",
                         "is_server": true,
                         "duration": 2,
-                        "server_address": "10.0.2.1",
+                        "server_address": "10.0.5.1",
                         "transport": "udp",
                         "frequency": 1
                     },
                     "alertflow_conditions": {
-                        "cpu_usage": 0,
-                        "ram_usage": 0,
+                        "cpu_usage": 10,
+                        "ram_usage": 40,
                         "interface_stats": 2000,
-                        "packet_loss": 0,
-                        "jitter": 0
+                        "packet_loss": 70,
+                        "jitter": 20
                     }
                 }
             }
@@ -92,7 +92,7 @@
         "frequency": 3,
         "devices": [
             {
-                "device_id": "2",
+                "device_id": "PC3",
                 "device_metrics": {
                     "cpu_usage": true,
                     "ram_usage": true,
@@ -106,11 +106,99 @@
                         "frequency": 1
                     },
                     "alertflow_conditions": {
-                        "cpu_usage": 0,
-                        "ram_usage": 0,
+                        "cpu_usage": 80,
+                        "ram_usage": 20,
                         "interface_stats": 2000,
-                        "packet_loss": 0,
-                        "jitter": 0
+                        "packet_loss": 70,
+                        "jitter": 20
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "task_id": "task-3",
+        "frequency": 20,
+        "devices": [
+            {
+                "device_id": "PC1",
+                "device_metrics": {
+                    "cpu_usage": true,
+                    "ram_usage": true,
+                    "interface_stats": ["eth0"]
+                },
+                "link_metrics": {
+                    "jitter": {
+                        "tool": "iperf",
+                        "is_server": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 2,
+                        "transport": "udp",
+                        "frequency": 60
+                    },
+                    "bandwidth": {
+                        "tool": "iperf",
+                        "is_server": true,
+                        "server_address": "192.168.1.1",
+                        "duration": 2,
+                        "transport": "udp",
+                        "frequency": 60
+                    },
+                    "packet_loss": {
+                        "tool": "iperf",
+                        "is_server": false,
+                        "duration": 2,
+                        "server_address": "10.0.5.1",
+                        "transport": "udp",
+                        "frequency": 60
+                    },
+                    "alertflow_conditions": {
+                        "cpu_usage": 80,
+                        "ram_usage": 90,
+                        "interface_stats": 2000,
+                        "packet_loss": 5,
+                        "jitter": 100
+                    }
+                }
+            },
+            {
+                "device_id": "PC4",
+                "device_metrics": {
+                    "cpu_usage": true,
+                    "ram_usage": true,
+                    "interface_stats": ["eth0"]
+                },
+                "link_metrics": {
+                    "jitter": {
+                        "tool": "iperf",
+                        "is_server": false,
+                        "server_address": "10.0.5.1",
+                        "duration": 2,
+                        "transport": "udp",
+                        "frequency": 50
+                    },
+                    "bandwidth": {
+                        "tool": "iperf",
+                        "is_server": false,
+                        "server_address": "10.0.5.1",
+                        "duration": 2,
+                        "transport": "udp",
+                        "frequency": 50
+                    },
+                    "packet_loss": {
+                        "tool": "iperf",
+                        "is_server": true,
+                        "duration": 2,
+                        "server_address": "10.0.5.1",
+                        "transport": "udp",
+                        "frequency": 1
+                    },
+                    "alertflow_conditions": {
+                        "cpu_usage": 50,
+                        "ram_usage": 30,
+                        "interface_stats": 3000,
+                        "packet_loss": 10,
+                        "jitter": 75
                     }
                 }
             }
