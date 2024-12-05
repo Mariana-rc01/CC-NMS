@@ -1,6 +1,14 @@
 import sys
 import sqlite3
-from tabulate import tabulate
+#from tabulate import tabulate
+import matplotlib.pyplot as plt
+
+metrics_units = {
+    "bandwidth": "Mbps",
+    "jitter": "ms",
+    "loss": "%",
+    "latency": "ms"
+}
 
 def main():
     if len(sys.argv) != 2:
@@ -15,17 +23,48 @@ def main():
         cursor = database_connection.cursor()
 
         # Fetch data from the packets table
-        cursor.execute("SELECT * FROM packets")
+        print("Select task:")
+        cursor.execute("SELECT DISTINCT task_id FROM packets")
+        tasks = cursor.fetchall()
+        for task in tasks:
+            print(task[0])
+        
+        task_id = input("|> ")
+
+        print("Select device:")
+        cursor.execute("SELECT DISTINCT device_id FROM packets WHERE task_id=?", (task_id,))
+        devices = cursor.fetchall()
+        for device in devices:
+            print(device[0])
+        
+        device_id = input("|> ")
+
+        print("Select metric:")
+        cursor.execute("SELECT * FROM packets WHERE task_id=? AND device_id=?", (task_id, device_id))
         data = cursor.fetchall()
 
-        # Fetch column names for pretty printing
         column_names = [description[0] for description in cursor.description]
+        for column in column_names:
+            print(column)
+
+        metric = input("|> ")
+
+        cursor.execute("SELECT timestamp, " + metric + " FROM packets WHERE task_id=? AND device_id=?", (task_id, device_id))
+        data = cursor.fetchall()
 
         if data:
             # Pretty print the data in a tabular format
-            print(tabulate(data, headers=column_names, tablefmt="grid"))
-        else:
-            print("No data found in the 'packets' table.")
+            # print(tabulate(data, headers=["timestamp", metric], tablefmt="grid"))
+            
+            # Plot data
+            x = [row[0] for row in data]
+            y = [row[1] for row in data]
+            plt.plot(x, y)
+            plt.xlabel("Timestamp")
+            plt.ylabel(f"{metric.capitalize() + ' (' + metrics_units[metric] + ')'}")
+            plt.title(f"{metric.capitalize()} for {task_id} and device {device_id}")
+            plt.show()
+        
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")

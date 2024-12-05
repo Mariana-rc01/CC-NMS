@@ -14,18 +14,18 @@
                     "jitter": {
                         "tool": "iperf",
                         "is_server": true,
-                        "server_address": "192.168.1.1",
+                        "server_address": "",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "bandwidth": {
                         "tool": "iperf",
                         "is_server": true,
-                        "server_address": "192.168.1.1",
+                        "server_address": "",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "packet_loss": {
                         "tool": "iperf",
@@ -33,7 +33,7 @@
                         "duration": 2,
                         "server_address": "10.0.5.1",
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "alertflow_conditions": {
                         "cpu_usage": 80,
@@ -55,24 +55,24 @@
                     "jitter": {
                         "tool": "iperf",
                         "is_server": false,
-                        "server_address": "10.0.5.1",
+                        "server_address": "10.0.3.10",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "bandwidth": {
                         "tool": "iperf",
                         "is_server": false,
-                        "server_address": "10.0.5.1",
+                        "server_address": "10.0.3.10",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "packet_loss": {
                         "tool": "iperf",
                         "is_server": true,
                         "duration": 2,
-                        "server_address": "10.0.5.1",
+                        "server_address": "",
                         "transport": "udp",
                         "frequency": 1
                     },
@@ -81,7 +81,7 @@
                         "ram_usage": 40,
                         "interface_stats": 2000,
                         "packet_loss": 70,
-                        "jitter": 20
+                        "jitter": 2
                     }
                 }
             }
@@ -110,7 +110,7 @@
                         "ram_usage": 20,
                         "interface_stats": 2000,
                         "packet_loss": 70,
-                        "jitter": 20
+                        "jitter": 2
                     }
                 }
             }
@@ -131,33 +131,33 @@
                     "jitter": {
                         "tool": "iperf",
                         "is_server": true,
-                        "server_address": "192.168.1.1",
+                        "server_address": "",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "bandwidth": {
                         "tool": "iperf",
                         "is_server": true,
-                        "server_address": "192.168.1.1",
+                        "server_address": "",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "packet_loss": {
                         "tool": "iperf",
                         "is_server": false,
                         "duration": 2,
-                        "server_address": "10.0.5.1",
+                        "server_address": "10.0.5.10",
                         "transport": "udp",
-                        "frequency": 60
+                        "frequency": 2
                     },
                     "alertflow_conditions": {
                         "cpu_usage": 80,
                         "ram_usage": 90,
                         "interface_stats": 2000,
                         "packet_loss": 5,
-                        "jitter": 100
+                        "jitter": 2
                     }
                 }
             },
@@ -175,7 +175,7 @@
                         "server_address": "10.0.5.1",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 50
+                        "frequency": 2
                     },
                     "bandwidth": {
                         "tool": "iperf",
@@ -183,13 +183,13 @@
                         "server_address": "10.0.5.1",
                         "duration": 2,
                         "transport": "udp",
-                        "frequency": 50
+                        "frequency": 2
                     },
                     "packet_loss": {
                         "tool": "iperf",
                         "is_server": true,
                         "duration": 2,
-                        "server_address": "10.0.5.1",
+                        "server_address": "",
                         "transport": "udp",
                         "frequency": 1
                     },
@@ -198,7 +198,7 @@
                         "ram_usage": 30,
                         "interface_stats": 3000,
                         "packet_loss": 10,
-                        "jitter": 75
+                        "jitter": 2
                     }
                 }
             }
