@@ -3,6 +3,7 @@ import sqlite3
 import matplotlib.pyplot as plt
 from collections import Counter
 
+# Dictionary mapping metrics to their units
 metrics_units = {
     "bandwidth": "Mbps",
     "jitter": "ms",
@@ -11,6 +12,19 @@ metrics_units = {
 }
 
 def main():
+    '''
+    Main function to execute the script's logic.
+    
+    Provides a menu-driven interface to:
+    1. View and plot metrics for specific tasks and devices.
+    2. View and visualize alert occurrences for specific tasks and devices.
+    
+    Args:
+        None (command-line arguments are used for input).
+    
+    Returns:
+        None. Outputs plots and prints to the terminal.
+    '''
     if len(sys.argv) != 2:
         print("Usage: python " + sys.argv[0] + " <metrics-db-file>")
         sys.exit(1)

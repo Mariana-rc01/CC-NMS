@@ -1,3 +1,17 @@
+'''
+This file provides the implementation for modeling and managing network tasks, devices, and their associated metrics 
+in a network monitoring system. The classes and their relationships enable a structured representation of tasks, 
+devices, metrics, and alert conditions. 
+
+Classes:
+    - Task: Represents a network task with an ID, frequency, and associated devices.
+    - Device: Represents a device with metrics and link properties.
+    - DeviceMetrics: Encapsulates device-level performance metrics.
+    - LinkMetrics: Encapsulates link-level metrics.
+    - BandwidthMetric, JitterMetric, PacketLossMetric, LatencyMetric: Represent specific network performance metrics.
+    - AlertFlowConditions: Defines threshold conditions to trigger alerts.
+'''
+
 class Task:
     def __init__(self, taskR):
         self.id = taskR.get("task_id")

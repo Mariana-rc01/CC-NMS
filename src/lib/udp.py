@@ -7,6 +7,17 @@ from lib.logging import log
 
 class UDPServer:
     def __init__(self, host, port, handler, retransmission_timeout=2, max_retries=3, flow_control=20):
+        '''
+        Initializes the UDP server with the specified parameters.
+
+        Args:
+            host (str): Hostname or IP address to bind the server to.
+            port (int): Port number to bind the server to.
+            handler (callable): A handler function to process incoming packets.
+            retransmission_timeout (int, optional): Timeout for retransmission of unacknowledged packets. Defaults to 2 seconds.
+            max_retries (int, optional): Maximum number of retransmissions for unacknowledged packets. Defaults to 3.
+            flow_control (int, optional): Maximum size of the client queue before applying flow control. Defaults to 20.
+        '''
         self.host = host
         self.port = port
         self.handler = handler
@@ -23,6 +34,11 @@ class UDPServer:
         self.flow_condition = threading.Condition()
 
     def start(self):
+        '''
+        Starts the UDP server to listen for incoming packets.
+
+        Continuously listens for incoming packets and spawns threads to handle them.
+        '''
         self.is_running = True
         hostname, port = self.socket.getsockname()
         log(f"UDP server started on {hostname}:{port}.")
@@ -44,6 +60,15 @@ class UDPServer:
                 log(f"{e}", "ERROR")
 
     def handle_packet(self, message, client_address):
+        '''
+        Handles incoming packets from clients.
+
+        Processes the packet, verifies checksums, and adds it to the appropriate client queue.
+
+        Args:
+            message (bytes): The raw packet data received from the client.
+            client_address (tuple): The address of the client sending the packet.
+        '''
         try:
             # Deserialize the received packet
             received_packet = Packet.deserialize(message)
@@ -64,11 +89,22 @@ class UDPServer:
             log(f"Error handling packet from {client_address}: {e}", "ERROR")
 
     def stop(self):
+        '''
+        Stops the UDP server and releases the socket.
+        '''
         self.is_running = False
         self.socket.close()
         log("UDP Server stopped.", "INFO")
 
     def process_ack(self, ack_packet):
+        '''
+        Processes an acknowledgment (ACK) packet.
+
+        Updates the sent packets dictionary to mark the packet as acknowledged and signals waiting threads.
+
+        Args:
+            ack_packet (ACKPacket): The acknowledgment packet.
+        '''
         # Handle the reception of an ACK packet.
         with self.lock:
             if ack_packet.ack_number in self.sent_packets:
@@ -80,6 +116,18 @@ class UDPServer:
             self.flow_condition.notify_all()
 
     def send_message(self, message, client_address):
+        '''
+        Sends a message to the specified client with retransmission logic.
+
+        Retransmits the message up to `max_retries` times if an acknowledgment is not received.
+
+        Args:
+            message (Packet): The packet to be sent.
+            client_address (tuple): The address of the client to send the packet to.
+
+        Returns:
+            bool: True if the message was acknowledged, False otherwise.
+        '''
         with self.lock:
             client_data = self.client_queues.get(client_address)
             if client_data and not client_data["can_send"]:
@@ -130,6 +178,15 @@ class UDPServer:
         return False
 
     def add_to_client_queue(self, packet, client_address):
+        '''
+        Adds a received packet to the client's queue.
+
+        Implements flow control by pausing/resuming sending based on the queue size.
+
+        Args:
+            packet (Packet): The received packet to be added to the queue.
+            client_address (tuple): The address of the client sending the packet.
+        '''
         with self.lock:
             if client_address not in self.client_queues:
                 self.client_queues[client_address] = {
@@ -162,11 +219,25 @@ class UDPServer:
             client_data["packets"][packet.sequence_number] = packet
 
     def process_all_client_queues(self):
+        '''
+        Processes all client queues to handle packets in the correct order.
+
+        Ensures packets are delivered to the handler function in sequence.
+        '''
         with self.lock:
             for client_address, client_data in self.client_queues.items():
                 self.process_client_queue(client_address, client_data)
 
     def process_client_queue(self, client_address, client_data):
+        '''
+        Processes the packet queue for a specific client.
+
+        Delivers packets to the handler function and manages flow control based on the queue size.
+
+        Args:
+            client_address (tuple): The address of the client whose queue is being processed.
+            client_data (dict): Data structure containing the client's queue and metadata.
+        '''
         while not client_data["queue"].empty():
             seq_num = client_data["queue"].queue[0]
             log(f"Processing packet {seq_num} for client {client_address}")

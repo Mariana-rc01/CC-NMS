@@ -3,6 +3,16 @@ from lib.task import Task
 from lib.logging import log
 
 def load_tasks_json(json_file):
+    '''
+    Loads tasks from a JSON file and converts them into Task objects.
+
+    Args:
+        json_file (str): Path to the JSON file containing task definitions.
+
+    Returns:
+        list[Task]: A list of Task objects parsed from the JSON file.
+                    Returns an empty list if the file does not exist or is invalid.
+    '''
     try:
         with open(json_file, 'r') as file:
             data = json.load(file)

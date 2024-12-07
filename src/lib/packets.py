@@ -6,6 +6,9 @@ from lib.task import Task
 import struct
 
 class PacketType(Enum):
+    '''
+    Enumeration for the different types of packets.
+    '''
     RegisterAgent = 0
     RegisterAgentResponse = 1
     Task = 2
@@ -14,18 +17,56 @@ class PacketType(Enum):
     FlowControl = 5
 
 class Packet():
+    '''
+    Base class for packets with utility methods for checksum calculation and validation.
+    '''
     def __init__(self, sequence_number = None, ack_number = None):
+        '''
+        Initializes a generic packet.
+
+        Args:
+            sequence_number (int, optional): Sequence number of the packet. Defaults to None.
+            ack_number (int, optional): Acknowledgment number of the packet. Defaults to None.
+        '''
         self.sequence_number = sequence_number
         self.ack_number = ack_number
 
     def calculate_checksum(data):
+        '''
+        Calculates the SHA-256 checksum for a given data.
+
+        Args:
+            data (bytes): The data to calculate the checksum for.
+
+        Returns:
+            str: The calculated checksum.
+        '''
         return hashlib.sha256(data).hexdigest()
     
     def validate_checksum(data, checksum):
+        '''
+        Validates the checksum of the data against the provided checksum.
+
+        Args:
+            data (bytes): The data to validate.
+            checksum (str): The checksum to compare against.
+
+        Returns:
+            bool: True if valid, False otherwise.
+        '''
         return checksum == Packet.calculate_checksum(data)
 
     @staticmethod
     def deserialize(data):
+        '''
+        Deserializes the raw packet data into the appropriate packet type.
+
+        Args:
+            data (bytes): Raw packet data.
+
+        Returns:
+            Packet: An instance of the appropriate packet subclass.
+        '''
         packet_type_value = data[0]
         packet_type = PacketType(packet_type_value)
            
@@ -45,7 +86,18 @@ class Packet():
             raise ValueError("Unknown packet type.")
 
 class RegisterAgentPacket():
+    '''
+    Packet used for registering an agent with the server.
+    '''
     def __init__(self, agent_id, sequence_number = None, ack_number = None):
+        '''
+        Initializes a RegisterAgent packet.
+
+        Args:
+            agent_id (str): The agent's unique identifier.
+            sequence_number (int, optional): Sequence number of the packet. Defaults to None.
+            ack_number (int, optional): Acknowledgment number of the packet. Defaults to None.
+        '''
         self.sequence_number = sequence_number
         self.ack_number = ack_number
         self.packet_type = PacketType.RegisterAgent
@@ -70,12 +122,26 @@ class RegisterAgentPacket():
         return RegisterAgentPacket(agent_id, sequence_number, ack_number)
 
 class AgentRegistrationStatus(Enum):
+    '''
+    Enumeration for agent registration status.
+    '''
     Success = 0
     AlreadyRegistered = 1
     InvalidID = 2
 
 class RegisterAgentPacketResponse():
+    '''
+    Packet used for responding to agent registration requests.
+    '''
     def __init__(self, agent_registration_status, sequence_number=None, ack_number=None):
+        '''
+        Initializes a RegisterAgentPacketResponse.
+
+        Args:
+            agent_registration_status (AgentRegistrationStatus): Registration status.
+            sequence_number (int, optional): Sequence number of the packet. Defaults to None.
+            ack_number (int, optional): Acknowledgment number of the packet. Defaults to None.
+        '''
         self.sequence_number = sequence_number
         self.ack_number = ack_number
         self.packet_type = PacketType.RegisterAgentResponse
@@ -100,7 +166,18 @@ class RegisterAgentPacketResponse():
         return RegisterAgentPacketResponse(agent_registration_status, sequence_number, ack_number)
     
 class TaskPacket:
+    '''
+    Packet used for distributing tasks to agents.
+    '''
     def __init__(self, tasks, sequence_number, ack_number):
+        '''
+        Initializes a TaskPacket.
+
+        Args:
+            tasks (list[Task]): List of tasks to include in the packet.
+            sequence_number (int): Sequence number of the packet.
+            ack_number (int): Acknowledgment number of the packet.
+        '''
         self.sequence_number = sequence_number
         self.ack_number = ack_number
         self.packet_type = PacketType.Task
@@ -156,6 +233,9 @@ class TaskPacket:
         return self.sequence_number == other.sequence_number
 
 class MetricsPacket:
+    '''
+    Packet used for sending metrics data from agents to the server.
+    '''
     def __init__(self, task_id, device_id, bandwidth=None, jitter=None, loss=None, latency=None, timestamp=None, sequence_number=None, ack_number=None):
         self.sequence_number = sequence_number
         self.ack_number = ack_number
@@ -229,6 +309,9 @@ class MetricsPacket:
         return self.sequence_number == other.sequence_number
     
 class ACKPacket():
+    '''
+    Packet used for acknowledgment of received packets.
+    '''
     def __init__(self, sequence_number, ack_number):
         self.packet_type = PacketType.ACK
         self.sequence_number = sequence_number
@@ -248,6 +331,9 @@ class ACKPacket():
         return ACKPacket(sequence_number, ack_number)
     
 class FlowControlPacket():
+    '''
+    Packet used for managing flow control during communication.
+    '''
     def __init__(self, sequence_number=None, ack_number=None, can_send=None):
         self.sequence_number = sequence_number
         self.ack_number = ack_number

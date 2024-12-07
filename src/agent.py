@@ -13,6 +13,23 @@ from lib.tcp import TCPClient, AlertMessage, AlertType
 agent_id = None
 
 def task_runner(task, server_address, udp_server, tcp_client):
+    '''
+    Executes a specific task assigned to the agent.
+
+    This function calculates various metrics (bandwidth, jitter, packet loss, latency) 
+    and conditions (CPU usage, RAM usage, interface stats) as per the task's configuration. 
+    The results are sent back to the server via UDP, and alerts are sent via TCP if 
+    thresholds are exceeded.
+
+    Args:
+        task: The task object containing metrics and conditions to calculate.
+        server_address: The server's address to send the metrics.
+        udp_server (UDPServer): The UDP server instance used for communication.
+        tcp_client (TCPClient): The TCP client instance used for sending alerts.
+
+    Returns:
+        None.
+    '''
     global agent_id
     subtasks = list(filter(lambda device: device.device_id == agent_id, task.devices))[0].link_metrics
     result = MetricsResult()
@@ -75,6 +92,16 @@ def task_runner(task, server_address, udp_server, tcp_client):
         tcp_client.send_alert(alert_message)
 
 def check_critical_changes(metrics, thresholds):
+    '''
+    Checks if any calculated metrics exceed their defined thresholds and generates alerts.
+
+    Args:
+        metrics (ConditionsResult): The calculated metrics of the agent (CPU, RAM, jitter, etc.).
+        thresholds: The thresholds specified for the task's metrics and conditions.
+
+    Returns:
+        list: A list of tuples containing the alert message and its type.
+    '''
     alerts = []
 
     if metrics.cpu_usage > thresholds.cpu_usage:
@@ -96,6 +123,20 @@ def check_critical_changes(metrics, thresholds):
 
 
 def run_task_periodically(task, server_address, udp_server, tcp_client):
+    '''
+    Periodically executes a task based on the defined frequency.
+
+    This function schedules the task runner to execute in a separate thread at regular intervals.
+
+    Args:
+        task: The task object containing the task configuration.
+        server_address: The server's address to send the metrics.
+        udp_server (UDPServer): The UDP server instance used for communication.
+        tcp_client (TCPClient): The TCP client instance used for sending alerts.
+
+    Returns:
+        None.
+    '''
     def run():
         while True:
             # Run task_runner in a separate thread
@@ -106,6 +147,18 @@ def run_task_periodically(task, server_address, udp_server, tcp_client):
     threading.Thread(target=run, daemon=True).start()
 
 def maybe_start_iperf_servers(tasks):
+    '''
+    Starts iperf servers for TCP and UDP if the agent is required to act as a server.
+
+    This function iterates through the tasks to check if the agent is configured as an iperf server.
+    If so, it starts the iperf servers for both TCP and UDP in separate threads.
+
+    Args:
+        tasks (list): A list of tasks assigned to the agent.
+
+    Returns:
+        None.
+    '''
     # If this agent serves as an iperf server (TCP and UDP), start the server here, and leave it running while the agent is active.
     has_server = False
     
@@ -125,6 +178,21 @@ def maybe_start_iperf_servers(tasks):
 
 
 def agent_packet_handler(message, server_address, server, tcp_client):
+    '''
+    Handles incoming packets from the NMS server.
+
+    This function processes registration responses and task packets. It sends acknowledgments 
+    for received packets and starts tasks in separate threads.
+
+    Args:
+        message (Packet): The incoming packet object from the server.
+        server_address: The server's address.
+        server (UDPServer): The UDP server instance used for communication.
+        tcp_client (TCPClient): The TCP client instance used for sending alerts.
+
+    Returns:
+        None.
+    '''
     if message.ack_number != 0:
         log(f"ACK received for sequence {message.ack_number}")
         return
@@ -155,6 +223,19 @@ def agent_packet_handler(message, server_address, server, tcp_client):
     return None
 
 def main():
+    '''
+    The entry point for the agent program.
+
+    This function initializes the agent, registers it with the NMS server, and starts 
+    listening for tasks and metrics on UDP and TCP channels.
+
+    Command-line arguments:
+        <server_ip>: The IP address of the server.
+        <agent_id>: The unique ID of the agent.
+
+    Returns:
+        None.
+    '''
     global agent_id
     log("Starting up NMS agent.")
 

@@ -24,6 +24,20 @@ required_agents = set()
 db_path = None
 
 def server_packet_handler(message, client_address, server):
+    '''
+    Handles incoming packets from the UDP server.
+
+    If the packet is an ACK, it logs the acknowledgment. For registration packets,
+    it attempts to register the agent. For metrics packets, it processes and stores metrics.
+
+    Args:
+        message (Packet): The incoming packet object.
+        client_address : The address of the client sending the packet.
+        server (UDPServer): The UDP server instance.
+
+    Returns:
+        RegisterAgentPacketResponse or None: A response packet for agent registration or None.
+    '''
     if message.ack_number != 0:
         log(f"ACK received for sequence {message.ack_number} from {client_address}.")
         return
@@ -37,6 +51,18 @@ def server_packet_handler(message, client_address, server):
     return None
 
 def handle_metrics(message, client_address):
+    '''
+    Processes metrics packets sent by agents.
+
+    Stores the metrics data in the database.
+
+    Args:
+        message (Packet): The metrics packet containing data.
+        client_address (tuple): The address of the agent sending the metrics.
+
+    Returns:
+        None.
+    '''
     global db_path
 
     if message.device_id in agent_manager.agent_ids:
@@ -48,6 +74,19 @@ def handle_metrics(message, client_address):
     return None
 
 def handle_register_agent(message, client_address):
+    '''
+    Registers an agent with the server.
+
+    If the agent is successfully registered, it updates the set of required agents
+    and notifies any waiting threads.
+
+    Args:
+        message (Packet): The registration packet.
+        client_address : The address of the registering agent.
+
+    Returns:
+        RegisterAgentPacketResponse: The response packet indicating registration success or failure.
+    '''
     agent_id = message.agent_id
     if agent_manager.register_agent(agent_id, client_address):
         log(f"Agent {agent_id} registered.")
@@ -63,6 +102,18 @@ def handle_register_agent(message, client_address):
     return RegisterAgentPacketResponse(AgentRegistrationStatus.AlreadyRegistered)
 
 def handle_agent_alert(client_socket, client_address):
+    '''
+    Processes an alert received from an agent.
+
+    Logs the alert and inserts it into the database.
+
+    Args:
+        alert_message (AlertMessage): The alert message containing alert details.
+        client_address (tuple): The address of the agent sending the alert.
+
+    Returns:
+        None.
+    '''
     try:
         # Receives the message
         data = client_socket.recv(1024)
@@ -82,12 +133,36 @@ def handle_agent_alert(client_socket, client_address):
         client_socket.close()
 
 def handle_alert(alert_message, client_address):
+    '''
+    Handles an alert message from an agent.
+
+    Logs the alert and stores it in the database.
+
+    Args:
+        alert_message (AlertMessage): The alert message containing alert details.
+        client_address: The address of the agent sending the alert.
+
+    Returns:
+        None.
+    '''
     log(f"Received alert from {client_address}.")
 
     insert_alert(db_path, alert_message.task_id, alert_message.device_id, alert_message.alert_type.name, alert_message.details,  time.strftime('%Y-%m-%d %H:%M:%S', localtime(alert_message.timestamp)))
 
 
 def distribute_tasks_to_agents(server, tasks):
+    '''
+    Distributes monitoring tasks to registered agents.
+
+    Groups tasks by device and sends them to the respective agents.
+
+    Args:
+        server (UDPServer): The UDP server instance.
+        tasks (list): A list of tasks to be distributed.
+
+    Returns:
+        None.
+    '''
     device_tasks = {}
 
     # Group tasks by device
@@ -107,6 +182,16 @@ def distribute_tasks_to_agents(server, tasks):
             # here we need to be careful when the task isn't send to the agent, we need to resend it
 
 def main():
+    '''
+    Main function for starting the NMS server.
+
+    Sets up the database, loads tasks, starts the TCP and UDP servers, and
+    waits for all agents to register before distributing tasks.
+
+    Returns:
+        None.
+    '''
+
     global db_path
 
     log("Starting up NMS server.")

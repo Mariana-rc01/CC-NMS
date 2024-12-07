@@ -17,6 +17,17 @@ app = Flask(__name__)
 DB_PATH = None
 
 def query_db(query, args=(), one=False):
+    '''
+    Executes a SQL query on the database.
+
+    Args:
+        query (str): The SQL query to execute.
+        args (tuple): The arguments to pass into the query.
+        one (bool): If True, fetches only one row; otherwise, fetches all rows.
+
+    Returns:
+        list or sqlite3.Row: The result of the query as a list of rows or a single row.
+    '''
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     cursor = connection.cursor()
@@ -27,30 +38,71 @@ def query_db(query, args=(), one=False):
 
 @app.route('/')
 def index():
+    '''
+    Renders the home page of the application.
+
+    Returns:
+        str: The rendered HTML of the home page.
+    '''
     return render_template("index.html")
 
 @app.route('/metrics')
 def metrics():
+    '''
+    Retrieves and displays all metrics from the database.
+
+    Returns:
+        str: The rendered HTML page displaying metrics.
+    '''
     data = query_db("SELECT * FROM packets ORDER BY timestamp DESC")
     return render_template("metrics.html", metrics=data)
 
 @app.route('/alerts')
 def alerts():
+    '''
+    Retrieves and displays all alerts from the database.
+
+    Returns:
+        str: The rendered HTML page displaying alerts.
+    '''
     data = query_db("SELECT * FROM alertflow ORDER BY timestamp DESC")
     return render_template("alerts.html", alerts=data)
 
 @app.route('/metrics_graphics')
 def metrics_graphics():
+    '''
+    Retrieves the list of tasks for metrics and renders the metrics graphics selection page.
+
+    Returns:
+        str: The rendered HTML page for metrics graph selection.
+    '''
     tasks = query_db("SELECT DISTINCT task_id FROM packets")
     return render_template("metrics_graphics.html", tasks=tasks)
 
 @app.route('/alerts_graphics')
 def alerts_graphics():
+    '''
+    Retrieves the list of tasks for alerts and renders the alerts graphics selection page.
+
+    Returns:
+        str: The rendered HTML page for alerts graph selection.
+    '''
     tasks = query_db("SELECT DISTINCT task_id FROM alertflow")
     return render_template("alerts_graphics.html", tasks=tasks)
 
 @app.route('/generate_metrics_graph', methods=['POST'])
 def generate_metrics_graph():
+    '''
+    Generates a line graph for a selected metric and returns it as a base64-encoded image.
+
+    Args:
+        task_id (str): The task ID to filter metrics.
+        device_id (str): The device ID to filter metrics.
+        metric (str): The metric to visualize (e.g., bandwidth, jitter, loss).
+
+    Returns:
+        JSON: A response containing the base64-encoded image or an error message if no data is found.
+    '''
     task_id = request.form['task_id']
     device_id = request.form['device_id']
     metric = request.form['metric']
@@ -82,6 +134,16 @@ def generate_metrics_graph():
 
 @app.route('/generate_alerts_graph', methods=['POST'])
 def generate_alerts_graph():
+    '''
+    Generates a bar chart for alert types and their occurrences and returns it as a base64-encoded image.
+
+    Args:
+        task_id (str): The task ID to filter alerts.
+        device_id (str): The device ID to filter alerts.
+
+    Returns:
+        JSON: A response containing the base64-encoded image or an error message if no alerts are found.
+    '''
     task_id = request.form['task_id']
     device_id = request.form['device_id']
 
@@ -110,6 +172,18 @@ def generate_alerts_graph():
     return jsonify({"image": img_base64})
 
 def run_flask():
+    '''
+    Starts the Flask application.
+
+    This function sets the global database path from command-line arguments
+    and starts the web server on the specified host and port.
+
+    Command-line arguments:
+        <path_to_database>: The path to the SQLite database.
+
+    Returns:
+        None.
+    '''
     global DB_PATH
 
     if len(sys.argv) < 2:

@@ -1,5 +1,31 @@
 from lib.task import *
 
+'''
+This file contains the implementation of serialization and deserialization methods for various network monitoring 
+objects such as tasks, device metrics, link metrics, and alert flow conditions. The purpose of these methods is 
+to convert Python objects into binary representations suitable for efficient transmission or storage and to 
+reconstruct them from their binary form.
+
+Classes:
+    - TaskSerializer:
+        Handles serialization and deserialization of Task objects, including their devices, metrics, and link metrics.
+
+    - DeviceMetricsSerializer:
+        Manages serialization and deserialization of DeviceMetrics objects, including CPU usage, RAM usage, 
+        and interface statistics.
+
+    - LinkMetricsSerializer:
+        Provides methods to serialize and deserialize LinkMetrics, including bandwidth, jitter, packet loss, 
+        latency, and alert flow conditions.
+
+    - BandwidthSerializer, JitterSerializer, PacketLossSerializer, LatencySerializer:
+        Specific serializers for bandwidth, jitter, packet loss, and latency metrics, encapsulating their 
+        unique properties and behavior.
+
+    - AlertFlowConditionsSerializer:
+        Handles serialization and deserialization of alert flow conditions, which define thresholds for triggering alerts.
+'''
+
 class TaskSerializer:
     def serialize(task):
         task_bytes = b''
